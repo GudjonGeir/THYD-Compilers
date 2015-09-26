@@ -82,7 +82,7 @@ id = {letter_} ( {letter_} | {digit} )*
 
 // Numbers
 digits = {digit}+
-optional_fraction = (. {digits})?
+optional_fraction = (\.{digits})?
 optional_exponent = ("E" ("+" | "−")? {digits})?
 num = {digits} {optional_fraction} {optional_exponent}
 
@@ -147,14 +147,17 @@ semicolon = ";"
 {id} { if(yytext().length() > 32) {
         return new Token(TokenCode.ERR_LONG_ID, DataType.NONE, OpType.NONE, null);
        }
-       return new Token(TokenCode.IDENTIFIER, DataType.ID, OpType.NONE, new SymbolTableEntry(yytext()));
+       SymbolTableEntry stEntry = SymbolTable.AddEntry(yytext());
+       return new Token(TokenCode.IDENTIFIER, DataType.ID, OpType.NONE, stEntry);
      }
 
-{num} { try {
+{num} { SymbolTableEntry stEntry = SymbolTable.AddEntry(yytext());
+        try {
             Integer.parseInt(yytext());
-            return new Token(TokenCode.NUMBER, DataType.INT, OpType.NONE, new SymbolTableEntry(yytext()));
+
+            return new Token(TokenCode.NUMBER, DataType.INT, OpType.NONE, stEntry);
         } catch (NumberFormatException e) {
-            return new Token(TokenCode.NUMBER, DataType.REAL, OpType.NONE, new SymbolTableEntry(yytext()));
+            return new Token(TokenCode.NUMBER, DataType.REAL, OpType.NONE, stEntry);
         }
       }
 

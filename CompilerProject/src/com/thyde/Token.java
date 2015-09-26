@@ -1,19 +1,36 @@
 package com.thyde;
 
 public class Token {
-    public TokenCode tokenCode;
-    public DataType dataType;
-    public OpType opType;
-    public SymbolTableEntry symbolTableEntry;
+    private TokenCode _tokenCode;
+    private DataType _dataType;
+    private OpType _opType;
+    private SymbolTableEntry _symbolTableEntry;
 
-    public Token(TokenCode tc, DataType dt, OpType ot, SymbolTableEntry ste) {
-        tokenCode = tc;
-        dataType = dt;
-        opType = ot;
-        symbolTableEntry = ste;
+    public Token(TokenCode tc, DataType dt, OpType ot, SymbolTableEntry ste)
+    {
+        _tokenCode = tc;
+        _dataType = dt;
+        _opType = ot;
+        _symbolTableEntry = ste;
     }
 
-    public TokenCode getTokenCode() {
-        return tokenCode;
+    public TokenCode getTokenCode()
+    {
+        return _tokenCode;
+    }
+
+    public DataType getDataType()
+    {
+        return _dataType;
+    }
+
+    public OpType getOpType()
+    {
+        return _opType;
+    }
+
+    public SymbolTableEntry getSymbolTableEntry()
+    {
+        return _symbolTableEntry;
     }
 }

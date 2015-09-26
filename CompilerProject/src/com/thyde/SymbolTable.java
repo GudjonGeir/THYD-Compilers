@@ -1,25 +1,27 @@
 package com.thyde;
 
+import sun.jvm.hotspot.debugger.cdbg.Sym;
+
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Set;
 
 public class SymbolTable {
-    private LinkedHashMap<String, SymbolTableEntry> table;
+    private static LinkedHashMap<String, SymbolTableEntry> table = new LinkedHashMap<String, SymbolTableEntry>();
 
-    public SymbolTable(){
-        table = new LinkedHashMap();
+    public static SymbolTableEntry AddEntry(String lexeme)
+    {
+        SymbolTableEntry entry = new SymbolTableEntry(lexeme);
+        table.put(lexeme, entry);
+        return entry;
     }
 
-    public void AddEntry(SymbolTableEntry ste) {
-        table.put(ste.lexeme, ste);
-    }
-
-    public SymbolTableEntry GetEntry(String lexeme) {
+    public static SymbolTableEntry GetEntry(String lexeme)
+    {
         return table.get(lexeme);
     }
 
-    public Iterator<SymbolTableEntry> GetTable() {
+    public static Iterator<SymbolTableEntry> GetTable() {
         Set entrySet = table.entrySet();
 
         Iterator it = entrySet.iterator();
