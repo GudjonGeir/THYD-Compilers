@@ -5,7 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Set;
 
 public class SymbolTable {
-        private LinkedHashMap<String, SymbolTableEntry> table;
+    private LinkedHashMap<String, SymbolTableEntry> table;
 
     public SymbolTable(){
         table = new LinkedHashMap();
