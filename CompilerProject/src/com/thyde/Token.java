@@ -5,13 +5,17 @@ public class Token {
     private DataType _dataType;
     private OpType _opType;
     private SymbolTableEntry _symbolTableEntry;
+    private int _lineNumber;
+    private int _column;
 
-    public Token(TokenCode tc, DataType dt, OpType ot, SymbolTableEntry ste)
+    public Token(TokenCode tc, DataType dt, OpType ot, SymbolTableEntry ste, int lineNumber, int column)
     {
-        _tokenCode = tc;
-        _dataType = dt;
-        _opType = ot;
+        _tokenCode        = tc;
+        _dataType         = dt;
+        _opType           = ot;
         _symbolTableEntry = ste;
+        _lineNumber       = lineNumber;
+        _column           = column;
     }
 
     public TokenCode getTokenCode()
@@ -32,5 +36,14 @@ public class Token {
     public SymbolTableEntry getSymbolTableEntry()
     {
         return _symbolTableEntry;
+    }
+
+    public int getLineNumber()
+    {
+        return _lineNumber;
+    }
+
+    public int getColumn(){
+        return _column;
     }
 }

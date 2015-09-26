@@ -68,7 +68,7 @@ package com.thyde;
 %}
 
 %eofval{
-    return new Token(TokenCode.EOF, DataType.NONE, OpType.NONE, null);
+    return new Token(TokenCode.EOF, DataType.NONE, OpType.NONE, null, yyline, yycolumn);
 %eofval}
 
 Whitespace = \r  |\n | \r\n | [ \t\f]
@@ -123,54 +123,54 @@ semicolon = ";"
 
 {Comment} { /* ignore */ }
 
-{class} { return new Token(TokenCode.CLASS, DataType.KEYWORD, OpType.NONE, null); }
-{static} { return new Token(TokenCode.STATIC, DataType.KEYWORD, OpType.NONE, null); }
-{void} { return new Token(TokenCode.VOID, DataType.KEYWORD, OpType.NONE, null); }
-{int} { return new Token(TokenCode.INT, DataType.KEYWORD, OpType.NONE, null); }
-{real} { return new Token(TokenCode.REAL, DataType.KEYWORD, OpType.NONE, null); }
-{if} { return new Token(TokenCode.IF, DataType.KEYWORD, OpType.NONE, null); }
-{else} { return new Token(TokenCode.ELSE, DataType.KEYWORD, OpType.NONE, null); }
-{for} { return new Token(TokenCode.FOR, DataType.KEYWORD, OpType.NONE, null); }
-{return} { return new Token(TokenCode.RETURN, DataType.KEYWORD, OpType.NONE, null); }
-{break} { return new Token(TokenCode.BREAK, DataType.KEYWORD, OpType.NONE, null); }
-{continue} { return new Token(TokenCode.CONTINUE, DataType.KEYWORD, OpType.NONE, null); }
-{lparen} { return new Token(TokenCode.LPAREN, DataType.NONE, OpType.NONE, null); }
-{rparen} { return new Token(TokenCode.RPAREN, DataType.NONE, OpType.NONE, null); }
-{lbrace} { return new Token(TokenCode.LBRACE, DataType.NONE, OpType.NONE, null); }
-{rbrace} { return new Token(TokenCode.RBRACE, DataType.NONE, OpType.NONE, null); }
-{lbracket} { return new Token(TokenCode.LBRACKET, DataType.NONE, OpType.NONE, null); }
-{rbracket} { return new Token(TokenCode.RBRACKET, DataType.NONE, OpType.NONE, null); }
-{not} { return new Token(TokenCode.NOT, DataType.NONE, OpType.NONE, null); }
-{comma} { return new Token(TokenCode.COMMA, DataType.NONE, OpType.NONE, null); }
-{semicolon} { return new Token(TokenCode.SEMICOLON, DataType.NONE, OpType.NONE, null); }
+{class} { return new Token(TokenCode.CLASS, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn); }
+{static} { return new Token(TokenCode.STATIC, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn); }
+{void} { return new Token(TokenCode.VOID, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn); }
+{int} { return new Token(TokenCode.INT, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn); }
+{real} { return new Token(TokenCode.REAL, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn); }
+{if} { return new Token(TokenCode.IF, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn); }
+{else} { return new Token(TokenCode.ELSE, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn); }
+{for} { return new Token(TokenCode.FOR, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn); }
+{return} { return new Token(TokenCode.RETURN, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn); }
+{break} { return new Token(TokenCode.BREAK, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn); }
+{continue} { return new Token(TokenCode.CONTINUE, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn); }
+{lparen} { return new Token(TokenCode.LPAREN, DataType.NONE, OpType.NONE, null, yyline, yycolumn); }
+{rparen} { return new Token(TokenCode.RPAREN, DataType.NONE, OpType.NONE, null, yyline, yycolumn); }
+{lbrace} { return new Token(TokenCode.LBRACE, DataType.NONE, OpType.NONE, null, yyline, yycolumn); }
+{rbrace} { return new Token(TokenCode.RBRACE, DataType.NONE, OpType.NONE, null, yyline, yycolumn); }
+{lbracket} { return new Token(TokenCode.LBRACKET, DataType.NONE, OpType.NONE, null, yyline, yycolumn); }
+{rbracket} { return new Token(TokenCode.RBRACKET, DataType.NONE, OpType.NONE, null, yyline, yycolumn); }
+{not} { return new Token(TokenCode.NOT, DataType.NONE, OpType.NONE, null, yyline, yycolumn); }
+{comma} { return new Token(TokenCode.COMMA, DataType.NONE, OpType.NONE, null, yyline, yycolumn); }
+{semicolon} { return new Token(TokenCode.SEMICOLON, DataType.NONE, OpType.NONE, null, yyline, yycolumn); }
 
 {id} { if(yytext().length() > 32) {
-        return new Token(TokenCode.ERR_LONG_ID, DataType.NONE, OpType.NONE, null);
+        return new Token(TokenCode.ERR_LONG_ID, DataType.NONE, OpType.NONE, null, yyline, yycolumn);
        }
        SymbolTableEntry stEntry = SymbolTable.AddEntry(yytext());
-       return new Token(TokenCode.IDENTIFIER, DataType.ID, OpType.NONE, stEntry);
+       return new Token(TokenCode.IDENTIFIER, DataType.ID, OpType.NONE, stEntry, yyline, yycolumn);
      }
 
 {num} { SymbolTableEntry stEntry = SymbolTable.AddEntry(yytext());
         try {
             Integer.parseInt(yytext());
 
-            return new Token(TokenCode.NUMBER, DataType.INT, OpType.NONE, stEntry);
+            return new Token(TokenCode.NUMBER, DataType.INT, OpType.NONE, stEntry, yyline, yycolumn);
         } catch (NumberFormatException e) {
-            return new Token(TokenCode.NUMBER, DataType.REAL, OpType.NONE, stEntry);
+            return new Token(TokenCode.NUMBER, DataType.REAL, OpType.NONE, stEntry, yyline, yycolumn);
         }
       }
 
-{incdecop} { return new Token(TokenCode.INCDECOP, DataType.OP, GetOpType(yytext()), null); }
+{incdecop} { return new Token(TokenCode.INCDECOP, DataType.OP, GetOpType(yytext()), null, yyline, yycolumn); }
 
-{relop} { return new Token(TokenCode.RELOP, DataType.OP, GetOpType(yytext()), null); }
+{relop} { return new Token(TokenCode.RELOP, DataType.OP, GetOpType(yytext()), null, yyline, yycolumn); }
 
-{addop} { return new Token(TokenCode.ADDOP, DataType.OP, GetOpType(yytext()), null); }
+{addop} { return new Token(TokenCode.ADDOP, DataType.OP, GetOpType(yytext()), null, yyline, yycolumn); }
 
-{mulop} { return new Token(TokenCode.MULOP, DataType.OP, GetOpType(yytext()), null); }
+{mulop} { return new Token(TokenCode.MULOP, DataType.OP, GetOpType(yytext()), null, yyline, yycolumn); }
 
-{assignop} { return new Token(TokenCode.ASSIGNOP, DataType.OP, OpType.ASSIGN, null); }
+{assignop} { return new Token(TokenCode.ASSIGNOP, DataType.OP, OpType.ASSIGN, null, yyline, yycolumn); }
 
 
 
-. { return new Token(TokenCode.ERR_ILL_CHAR, DataType.NONE, OpType.NONE, null); }
+. { return new Token(TokenCode.ERR_ILL_CHAR, DataType.NONE, OpType.NONE, null, yyline, yycolumn); }
