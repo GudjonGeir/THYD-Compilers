@@ -111,3 +111,9 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+
+# latex files
+*.aux
+*.log
+*.pdf
