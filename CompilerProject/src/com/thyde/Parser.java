@@ -352,6 +352,7 @@ public class Parser {
 
             }
             else {
+                System.out.println("Statement_prime");
                 // TODO
             }
         }
@@ -371,6 +372,7 @@ public class Parser {
 
             }
             else {
+                System.out.println("Statement_prime_prime - token.getTokenCode() == TokenCode.SEMICOLON");
                 // TODO
             }
         }
@@ -378,6 +380,8 @@ public class Parser {
 
         }
         else {
+            System.out.println("Statement_prime_prime - token.getTokenCode() == TokenCode.INCDECOP || token.getTokenCode() == TokenCode.ASSIGNOP");
+
             // TODO
         }
     }
@@ -405,10 +409,13 @@ public class Parser {
 
             }
             else {
+                System.out.println("Statement_block - token.getTokenCode() == TokenCode.RBRACE");
                 // TODO
             }
         }
         else {
+            System.out.println("Statement_block - token.getTokenCode() == TokenCode.LBRACE");
+
             // TODO
         }
     }
@@ -420,6 +427,7 @@ public class Parser {
 
         }
         else {
+            System.out.println("Incr_decr_var");
             // TODO
         }
     }
@@ -492,6 +500,8 @@ public class Parser {
             Simple_expression_prime();
         }
         else {
+            System.out.println("Simple_expression");
+
             // TODO
         }
     }
@@ -537,6 +547,8 @@ public class Parser {
 
             }
             else {
+                System.out.println("Factor");
+
                 // TODO
             }
         }
@@ -555,6 +567,7 @@ public class Parser {
 
             }
             else {
+                System.out.println("Factor_prime");
                 // TODO
             }
         }
@@ -569,6 +582,8 @@ public class Parser {
             Variable_loc_prime();
         }
         else {
+            System.out.println("Variable_loc");
+
             // TODO
         }
     }
@@ -582,6 +597,8 @@ public class Parser {
 
             }
             else {
+                System.out.println("Variable_loc_prime - token.getTokenCode() == TokenCode.RBRACKET");
+
                 // TODO
             }
         }
@@ -597,10 +614,14 @@ public class Parser {
 
             }
             else {
+
+                System.out.println("Sign - token.getTokenCode() == TokenCode.ADDOP || token.getOpType() == OpType.MINUS");
                 // TODO
             }
         }
         else {
+            System.out.println("Sign - token.getTokenCode() == TokenCode.ADDOP");
+
             // TODO
         }
     }
