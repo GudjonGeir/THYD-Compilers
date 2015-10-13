@@ -1,7 +1,5 @@
 package com.thyde;
 
-import sun.jvm.hotspot.debugger.cdbg.Sym;
-
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Set;
