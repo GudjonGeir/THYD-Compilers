@@ -32,22 +32,27 @@ public class Parser {
                         }
                         else {
                             // TODO
+                            System.out.println("Program - token.getTokenCode() == TokenCode.EOF");
                         }
                     }
                     else {
                         // TODO
+                        System.out.println("Program - token.getTokenCode() == TokenCode.RBRACE");
                     }
                 }
                 else {
                     // TODO
+                    System.out.println("Program - token.getTokenCode() == TokenCode.LBRACE");
                 }
             }
             else {
                 // TODO
+                System.out.println("Program - token.getTokenCode() == TokenCode.IDENTIFIER");
             }
         }
         else {
             // TODO
+            System.out.println("Program - token.getTokenCode() == TokenCode.CLASS");
         }
     }
 
@@ -74,6 +79,7 @@ public class Parser {
         }
         else {
             // TODO
+            System.out.println("Type");
         }
     }
 
@@ -104,6 +110,7 @@ public class Parser {
         }
         else {
             // TODO
+            System.out.println("Variable");
         }
     }
 
@@ -117,10 +124,12 @@ public class Parser {
                 }
                 else {
                     // TODO
+                    System.out.println("Variable_prime - token.getTokenCode() == TokenCode.RBRACE");
                 }
             }
             else {
                 // TODO
+                System.out.println("Variable_prime - token.getTokenCode() == TokenCode.NUMBER");
             }
         }
         // epsilon
@@ -159,26 +168,33 @@ public class Parser {
                             }
                             else {
                                 // TODO
+                                System.out.println("Method_declaration - token.getTokenCode() == TokenCode.RBRACE");
+
                             }
                         }
                         else {
                             // TODO
+                            System.out.println("Method_declaration - token.getTokenCode() == TokenCode.LBRACE");
                         }
                     }
                     else {
                         // TODO
+                        System.out.println("Method_declaration - token.getTokenCode() == TokenCode.RPAREN");
                     }
                 }
                 else {
                     // TODO
+                    System.out.println("Method_declaration - token.getTokenCode() == TokenCode.LPAREN");
                 }
             }
             else {
                 // TODO
+                System.out.println("Method_declaration - token.getTokenCode() == TokenCode.IDENTIFIER");
             }
         }
         else {
             // TODO
+            System.out.println("Method_declaration - token.getTokenCode() == TokenCode.STATIC");
         }
     }
 
@@ -207,6 +223,7 @@ public class Parser {
         }
         else {
             // TODO
+            System.out.println("Parameter_list");
         }
     }
 
@@ -221,6 +238,7 @@ public class Parser {
             }
             else {
                 // TODO
+                System.out.println("Parameter_list_prime");
             }
         }
         // epsilon
@@ -260,10 +278,12 @@ public class Parser {
                 }
                 else {
                     // TODO
+                    System.out.println("Statement - token.getTokenCode() == TokenCode.RPAREN");
                 }
             }
             else {
                 // TODO
+                System.out.println("Statement - token.getTokenCode() == TokenCode.LPAREN");
             }
         }
         else if (token.getTokenCode() == TokenCode.FOR) {
@@ -290,22 +310,28 @@ public class Parser {
                             }
                             else {
                                 // TODO
+                                System.out.println("Statement - token.getTokenCode() == TokenCode.RPAREN");
                             }
                         }
                         else {
                             // TODO
+                            System.out.println("Statement - token.getTokenCode() == TokenCode.SEMICOLON1");
                         }
                     }
                     else {
                         // TODO
+                        System.out.println("Statement - token.getTokenCode() == TokenCode.SEMICOLON2");
                     }
                 }
                 else {
                     // TODO
+                    System.out.println("Statement - token.getTokenCode() == TokenCode.ASSIGNOP");
+
                 }
             }
             else {
                 // TODO
+                System.out.println("Statement - token.getTokenCode() == TokenCode.LPAREN");
             }
 
         }
@@ -318,6 +344,8 @@ public class Parser {
             }
             else {
                 // TODO
+                System.out.println("Statement - token.getTokenCode() == TokenCode.SEMICOLON3");
+
             }
         }
         else if (token.getTokenCode() == TokenCode.BREAK) {
@@ -327,6 +355,7 @@ public class Parser {
             }
             else {
                 // TODO
+                System.out.println("Statement - token.getTokenCode() == TokenCode.SEMICOLON4");
             }
         }
         else if (token.getTokenCode() == TokenCode.CONTINUE) {
@@ -336,6 +365,7 @@ public class Parser {
             }
             else {
                 // TODO
+                System.out.println("Statement - token.getTokenCode() == TokenCode.SEMICOLON5");
             }
         }
         else {
