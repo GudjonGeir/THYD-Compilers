@@ -28,26 +28,26 @@ public class Parser {
                     if (token.getTokenCode() == TokenCode.RBRACE) {
                         token = lexer.yylex();
                         if (token.getTokenCode() == TokenCode.EOF) {
-
+                            System.out.println("No errors");
                         }
                         else {
-
+                            // TODO
                         }
                     }
                     else {
-
+                        // TODO
                     }
                 }
                 else {
-
+                    // TODO
                 }
             }
             else {
-
+                // TODO
             }
         }
         else {
-
+            // TODO
         }
     }
 
@@ -132,8 +132,11 @@ public class Parser {
     }
 
     public static void More_method_declarations() throws IOException {
-        Method_declaration();
-        More_method_declarations();
+        if (token.getTokenCode() == TokenCode.STATIC){
+            Method_declaration();
+            More_method_declarations();
+        }
+        // epsilon
     }
 
     public static void Method_declaration() throws IOException {
@@ -240,10 +243,8 @@ public class Parser {
 
     public static void Statement() throws IOException {
         if (token.getTokenCode() == TokenCode.IDENTIFIER) {
-            // TODO left factor
-            // variable_loc
-            // id ( expression_list)
-            // incr_decr_var
+            token = lexer.yylex();
+            Statement_prime();
         }
         else if (token.getTokenCode() == TokenCode.IF) {
             token = lexer.yylex();
@@ -268,7 +269,43 @@ public class Parser {
         else if (token.getTokenCode() == TokenCode.FOR) {
             token = lexer.yylex();
             if (token.getTokenCode() == TokenCode.LPAREN) {
-                // TODO variable loc
+                token = lexer.yylex();
+                Variable_loc();
+                token = lexer.yylex();
+                if (token.getTokenCode() == TokenCode.ASSIGNOP) {
+                    token = lexer.yylex();
+                    Expression();
+                    token = lexer.yylex();
+                    if (token.getTokenCode() == TokenCode.SEMICOLON) {
+                        token = lexer.yylex();
+                        Expression();
+                        token = lexer.yylex();
+                        if (token.getTokenCode() == TokenCode.SEMICOLON) {
+                            token = lexer.yylex();
+                            Incr_decr_var();
+                            token = lexer.yylex();
+                            if (token.getTokenCode() == TokenCode.RPAREN) {
+                                token = lexer.yylex();
+                                Statement_block();
+                            }
+                            else {
+                                // TODO
+                            }
+                        }
+                        else {
+                            // TODO
+                        }
+                    }
+                    else {
+                        // TODO
+                    }
+                }
+                else {
+                    // TODO
+                }
+            }
+            else {
+                // TODO
             }
 
         }
@@ -301,8 +338,270 @@ public class Parser {
                 // TODO
             }
         }
-        // TODO: left factor
-        // incr_decr_var
-        // statement_block
+        else {
+            Statement_block();
+        }
+    }
+
+    public static void Statement_prime() throws IOException {
+        if (token.getTokenCode() == TokenCode.LPAREN) {
+            token = lexer.yylex();
+            Expression_list();
+            token = lexer.yylex();
+            if (token.getTokenCode() == TokenCode.RPAREN) {
+
+            }
+            else {
+                // TODO
+            }
+        }
+        else {
+            Variable_loc_prime();
+            token = lexer.yylex();
+            Statement_prime_prime();
+        }
+    }
+
+    public static void Statement_prime_prime() throws IOException {
+        if (token.getTokenCode() == TokenCode.ASSIGNOP) {
+            token = lexer.yylex();
+            Expression();
+            token = lexer.yylex();
+            if (token.getTokenCode() == TokenCode.SEMICOLON) {
+
+            }
+            else {
+                // TODO
+            }
+        }
+        else if (token.getTokenCode() == TokenCode.INCDECOP) {
+
+        }
+        else {
+            // TODO
+        }
+    }
+
+    public static void Optional_expression() throws IOException {
+        if (token.getTokenCode() == TokenCode.IDENTIFIER
+                || token.getTokenCode() == TokenCode.NUMBER
+                || token.getTokenCode() == TokenCode.MULOP
+                || token.getTokenCode() == TokenCode.NOT
+                || token.getTokenCode() == TokenCode.LPAREN
+                || (token.getTokenCode() == TokenCode.ADDOP
+                    && (token.getOpType() == OpType.MINUS
+                        || token.getOpType() == OpType.PLUS))) {
+            Expression();
+        }
+        // epsilon
+    }
+
+    public static void Statement_block() throws IOException {
+        if (token.getTokenCode() == TokenCode.LBRACE) {
+            token = lexer.yylex();
+            Statement_list();
+            token = lexer.yylex();
+            if (token.getTokenCode() == TokenCode.RBRACE) {
+
+            }
+            else {
+                // TODO
+            }
+        }
+        else {
+            // TODO
+        }
+    }
+
+    public static void Incr_decr_var() throws IOException {
+        Variable_loc();
+        token = lexer.yylex();
+        if (token.getTokenCode() == TokenCode.INCDECOP) {
+
+        }
+        else {
+            // TODO
+        }
+    }
+
+    public static void Optional_else() throws IOException {
+        if (token.getTokenCode() == TokenCode.ELSE) {
+            token = lexer.yylex();
+            Statement_block();
+        }
+        // epsilon
+    }
+
+    public static void Expression_list() throws IOException {
+        if (token.getTokenCode() == TokenCode.IDENTIFIER
+                || token.getTokenCode() == TokenCode.NUMBER
+                || token.getTokenCode() == TokenCode.MULOP
+                || token.getTokenCode() == TokenCode.NOT
+                || token.getTokenCode() == TokenCode.LPAREN
+                || (token.getTokenCode() == TokenCode.ADDOP
+                    && (token.getOpType() == OpType.MINUS
+                        || token.getOpType() == OpType.PLUS))) {
+            Expression();
+            token = lexer.yylex();
+            More_expressions();
+        }
+        // epsilon
+    }
+
+    public static void More_expressions() throws IOException {
+        if (token.getTokenCode() == TokenCode.COMMA) {
+            token = lexer.yylex();
+            Expression();
+            token = lexer.yylex();
+            More_expressions();
+        }
+        // epsilon
+    }
+
+    public static void Expression() throws IOException {
+        Simple_expression();
+        token = lexer.yylex();
+        Expression_prime();
+    }
+
+    public static void Expression_prime() throws IOException {
+        if (token.getTokenCode() == TokenCode.RELOP) {
+            token = lexer.yylex();
+            Simple_expression();
+        }
+        // epsilon
+    }
+
+    public static void Simple_expression() throws IOException {
+        if (token.getTokenCode() == TokenCode.IDENTIFIER
+                || token.getTokenCode() == TokenCode.NUMBER
+                || token.getTokenCode() == TokenCode.MULOP
+                || token.getTokenCode() == TokenCode.NOT
+                || token.getTokenCode() == TokenCode.LPAREN) {
+            Term();
+            token = lexer.yylex();
+            Simple_expression_prime();
+        }
+        else if (token.getTokenCode() == TokenCode.ADDOP
+                && (token.getOpType() == OpType.MINUS
+                || token.getOpType() == OpType.PLUS)) {
+            Sign();
+            token = lexer.yylex();
+            Term();
+            token = lexer.yylex();
+            Simple_expression_prime();
+        }
+        else {
+            // TODO
+        }
+    }
+
+    public static void Simple_expression_prime() throws IOException {
+        if (token.getTokenCode() == TokenCode.ADDOP) {
+            token = lexer.yylex();
+            Term();
+            token = lexer.yylex();
+            Simple_expression_prime();
+        }
+        // epsilon
+    }
+
+    public static void Term() throws IOException {
+        Factor();
+        token = lexer.yylex();
+        Term_prime();
+    }
+
+    public static void Term_prime() throws IOException {
+        if (token.getTokenCode() == TokenCode.MULOP) {
+            token = lexer.yylex();
+            Factor();
+            token = lexer.yylex();
+            Term_prime();
+        }
+    }
+
+    public static void Factor() throws IOException {
+        if (token.getTokenCode() == TokenCode.IDENTIFIER) {
+            token = lexer.yylex();
+            Factor_prime();
+        }
+        else if (token.getTokenCode() == TokenCode.NUMBER) {
+
+        }
+        else if (token.getTokenCode() == TokenCode.LPAREN) {
+            token = lexer.yylex();
+            Expression();
+            token = lexer.yylex();
+            if (token.getTokenCode() == TokenCode.RPAREN) {
+
+            }
+            else {
+                // TODO
+            }
+        }
+        else if (token.getTokenCode() == TokenCode.NOT) {
+            token = lexer.yylex();
+            Factor();
+        }
+    }
+
+    public static void Factor_prime() throws IOException {
+        if (token.getTokenCode() == TokenCode.LPAREN) {
+            token = lexer.yylex();
+            Expression_list();
+            token = lexer.yylex();
+            if (token.getTokenCode() == TokenCode.RPAREN) {
+
+            }
+            else {
+                // TODO
+            }
+        }
+        else {
+            Variable_loc_prime();
+        }
+    }
+
+    public static void Variable_loc() throws IOException {
+        if (token.getTokenCode() == TokenCode.IDENTIFIER) {
+            token = lexer.yylex();
+            Variable_loc_prime();
+        }
+        else {
+            // TODO
+        }
+    }
+
+    public static void Variable_loc_prime() throws IOException {
+        if (token.getTokenCode() == TokenCode.LBRACKET) {
+            token = lexer.yylex();
+            Expression();
+            token = lexer.yylex();
+            if (token.getTokenCode() == TokenCode.RBRACKET) {
+
+            }
+            else {
+                // TODO
+            }
+        }
+        // epsilon
+    }
+
+    public static void Sign() {
+        if (token.getTokenCode() == TokenCode.ADDOP) {
+            if (token.getOpType() == OpType.PLUS) {
+
+            }
+            else if (token.getOpType() == OpType.MINUS) {
+
+            }
+            else {
+                // TODO
+            }
+        }
+        else {
+            // TODO
+        }
     }
 }
