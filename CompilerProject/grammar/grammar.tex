@@ -67,9 +67,10 @@
               		& & $|$  \token{break} \token{$;$} \\
               		& & $|$  \token{continue} \token{$;$} \\
               		& & $|$  \nont{statement\_block} \\
-	\lnont{statement'} \nont{variable\_loc'} \token{$=$} \nont{expression} \token{$;$} \\
-					& & $|$ \nont{incr\_decr\_var'} \token{$;$} \\
+	\lnont{statement'} \nont{variable\_loc'} \nont{statement''} \\
 					& & $|$ \token{$($} \nont{expression\_list} \token{$)$} \token{$;$} \\
+
+	\lnont{statement''} \token{$=$} \nont{expression} \token{$;$} $|$ \token{incdecop} \\
 
 \end{tabular}
 \newpage
@@ -79,13 +80,12 @@
 	\lnont{statement\_block} \token{$\{$} \nont{statement\_list} \token{$\}$} \\
 
 	\lnont{incr\_decr\_var} \nont{variable\_loc} \token{incdecop} \\
-	\lnont{incr\_decr\_var'} \nont{variable\_loc'} \token{incdecop} \\
 
 	\lnont{optional\_else} \token{else} \nont{statement\_block} $|$ $\epsilon$ \\
 
 	\lnont{expression\_list} \nont{expression} \nont{more\_expressions} $|$ $\epsilon$ \\
 
-	\lnont{more\_expressions} \token{$,$} \nont{expression} \nont{more\_expressions'} $|$ $\epsilon$ \\
+	\lnont{more\_expressions} \token{$,$} \nont{expression} \nont{more\_expressions} $|$ $\epsilon$ \\
 
 	\lnont{expression}  \nont{simple\_expression} \nont{expression'} \\
 	\lnont{expression'} \token{relop} \nont{simple\_expression} $|$ $\epsilon$ \\
@@ -94,7 +94,7 @@
 	\lnont{simple\_expression'} \token{addop} \nont{term} \nont{simple\_expression'} $|$ $\epsilon$ \\
 
 	\lnont{term} \nont{factor} \nont{term'}\\
-	\lnont{term} \token{mulop} \nont{factor}  \nont{term'} $|$ $\epsilon$ \\
+	\lnont{term'} \token{mulop} \nont{factor}  \nont{term'} $|$ $\epsilon$ \\
 
 	\lnont{factor} \token{id} \nont{factor'} $|$ \token{num} $|$ \token{$($} \nont{expression} \token{$)$} $|$ \token{$!$} \nont{factor} \\
 
