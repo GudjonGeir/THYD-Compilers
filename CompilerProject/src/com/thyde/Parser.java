@@ -10,7 +10,7 @@ import java.util.List;
 public class Parser {
     private static Lexer lexer;
     private static Token token;
-    private static String[] codeLines = makeCodeLines();
+    //private static String[] codeLines = makeCodeLines();
 
     public static String[] makeCodeLines(){
 
