@@ -1,11 +1,40 @@
 package com.thyde;
-
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Parser {
     private static Lexer lexer;
     private static Token token;
+    private static String[] codeLines = makeCodeLines();
+
+    public static String[] makeCodeLines(){
+
+        String line = " ";
+
+        Scanner code = null;
+        try {
+            code = new Scanner(new File("test.txt")).useDelimiter(",\\s*");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        List<String> codeLinesTemp = new ArrayList<String>();
+
+        while (code.hasNext()) {
+            line = code.next();
+            codeLinesTemp.add(line);
+        }
+        code.close();
+
+        String[] codeLines = codeLinesTemp.toArray(new String[0]);
+        return codeLines;
+
+    }
 
     public static void main(String[] args) throws IOException {
         lexer = new Lexer(new FileReader(args[0]));
