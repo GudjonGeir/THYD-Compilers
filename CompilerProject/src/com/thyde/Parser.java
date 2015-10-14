@@ -338,9 +338,8 @@ public class Parser {
 
     public static void Simple_expression_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.ADDOP) {
-            token = lexer.yylex();
+            Match(TokenCode.ADDOP);
             Term();
-            //token = lexer.yylex();
             Simple_expression_prime();
         }
         // epsilon
@@ -348,13 +347,12 @@ public class Parser {
 
     public static void Term() throws IOException {
         Factor();
-        //token = lexer.yylex();
         Term_prime();
     }
 
     public static void Term_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.MULOP) {
-            token = lexer.yylex();
+            Match(TokenCode.MULOP);
             Factor();
             //token = lexer.yylex();
             Term_prime();
@@ -364,27 +362,19 @@ public class Parser {
 
     public static void Factor() throws IOException {
         if (token.getTokenCode() == TokenCode.IDENTIFIER) {
-            token = lexer.yylex();
+            Match(TokenCode.IDENTIFIER);
             Factor_prime();
         }
         else if (token.getTokenCode() == TokenCode.NUMBER) {
-            token = lexer.yylex();
+            Match(TokenCode.NUMBER);
         }
         else if (token.getTokenCode() == TokenCode.LPAREN) {
-            token = lexer.yylex();
+            Match(TokenCode.LPAREN);
             Expression();
-            //token = lexer.yylex();
-            if (token.getTokenCode() == TokenCode.RPAREN) {
-                token = lexer.yylex();
-            }
-            else {
-                System.out.println("Factor");
-
-                // TODO
-            }
+            Match(TokenCode.RPAREN);
         }
         else if (token.getTokenCode() == TokenCode.NOT) {
-            token = lexer.yylex();
+            Match(TokenCode.NOT);
             Factor();
         }
         else {
@@ -394,16 +384,9 @@ public class Parser {
 
     public static void Factor_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.LPAREN) {
-            token = lexer.yylex();
+            Match(TokenCode.LPAREN);
             Expression_list();
-            //token = lexer.yylex();
-            if (token.getTokenCode() == TokenCode.RPAREN) {
-                token = lexer.yylex();
-            }
-            else {
-                System.out.println("Factor_prime");
-                // TODO
-            }
+            Match(TokenCode.RPAREN);
         }
         else {
             Variable_loc_prime();
@@ -411,30 +394,15 @@ public class Parser {
     }
 
     public static void Variable_loc() throws IOException {
-        if (token.getTokenCode() == TokenCode.IDENTIFIER) {
-            token = lexer.yylex();
-            Variable_loc_prime();
-        }
-        else {
-            System.out.println("Variable_loc");
-
-            // TODO
-        }
+        Match(TokenCode.IDENTIFIER);
+        Variable_loc_prime();
     }
 
     public static void Variable_loc_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.LBRACKET) {
-            token = lexer.yylex();
+            Match(TokenCode.LBRACKET);
             Expression();
-            //token = lexer.yylex();
-            if (token.getTokenCode() == TokenCode.RBRACKET) {
-                token = lexer.yylex();
-            }
-            else {
-                System.out.println("Variable_loc_prime - token.getTokenCode() == TokenCode.RBRACKET");
-
-                // TODO
-            }
+            Match(TokenCode.RBRACKET);
         }
         // epsilon
     }
