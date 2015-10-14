@@ -1,5 +1,7 @@
 package com.thyde;
 
+import com.sun.org.apache.xerces.internal.impl.xpath.regex.Match;
+
 import java.io.FileReader;
 import java.io.IOException;
 
@@ -8,75 +10,43 @@ public class Parser {
     private static Token token;
 
     public static void main(String[] args) throws IOException {
-        lexer = new Lexer(new FileReader(args[0]));
+        Parse(new FileReader(args[0]));
+    }
+
+    public static void Parse(FileReader fr) throws IOException {
+        lexer = new Lexer(fr);
+        token = lexer.yylex();
         Program();
+        Match(TokenCode.EOF);
+        System.out.println("No errors");
     }
 
     public static void Program() throws IOException {
-        token = lexer.yylex();
-        if (token.getTokenCode() == TokenCode.CLASS) {
-            token = lexer.yylex();
-            if (token.getTokenCode() == TokenCode.IDENTIFIER) {
-                token = lexer.yylex();
-                if (token.getTokenCode() == TokenCode.LBRACE) {
-                    token = lexer.yylex();
-                    Variable_declarations();
-                    //token = lexer.yylex();
-                    Method_declarations();
-
-                    //token = lexer.yylex();
-                    if (token.getTokenCode() == TokenCode.RBRACE) {
-                        token = lexer.yylex();
-                        if (token.getTokenCode() == TokenCode.EOF) {
-                            System.out.println("No errors");
-                        }
-                        else {
-                            // TODO
-                            System.out.println("Program - token.getTokenCode() == TokenCode.EOF");
-                        }
-                    }
-                    else {
-                        // TODO
-                        System.out.println("Program - token.getTokenCode() == TokenCode.RBRACE");
-                    }
-                }
-                else {
-                    // TODO
-                    System.out.println("Program - token.getTokenCode() == TokenCode.LBRACE");
-                }
-            }
-            else {
-                // TODO
-                System.out.println("Program - token.getTokenCode() == TokenCode.IDENTIFIER");
-            }
-        }
-        else {
-            // TODO
-            System.out.println("Program - token.getTokenCode() == TokenCode.CLASS");
-        }
+        Match(TokenCode.CLASS);
+        Match(TokenCode.IDENTIFIER);
+        Match(TokenCode.LBRACE);
+        Variable_declarations();
+        Method_declarations();
+        Match(TokenCode.RBRACE);
     }
 
     public static void Variable_declarations() throws IOException {
         // Peeking because Type starts with INT or REAL
         if (token.getTokenCode() == TokenCode.INT || token.getTokenCode() == TokenCode.REAL) {
             Type();
-            //token = lexer.yylex();
             Variable_list();
-            if (token.getTokenCode() == TokenCode.SEMICOLON) {
-                token = lexer.yylex();
-                Variable_declarations();
-            }
-
+            Match(TokenCode.SEMICOLON);
+            Variable_declarations();
         }
         // epsilon
     }
 
     public static void Type() throws IOException {
         if (token.getTokenCode() == TokenCode.INT) {
-            token = lexer.yylex();
+            Match(TokenCode.INT);
         }
         else if (token.getTokenCode() == TokenCode.REAL) {
-            token = lexer.yylex();
+            Match(TokenCode.REAL);
         }
         else {
             // TODO
@@ -86,14 +56,12 @@ public class Parser {
 
     public static void Variable_list() throws IOException {
         Variable();
-        //token = lexer.yylex();
         Variable_list_prime();
     }
 
     public static void Variable_list_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.COMMA) {
-            token = lexer.yylex();
-
+            Match(TokenCode.COMMA);
             Variable();
             Variable_list_prime();
         }
@@ -101,34 +69,15 @@ public class Parser {
     }
 
     public static void Variable() throws IOException {
-        if (token.getTokenCode() == TokenCode.IDENTIFIER) {
-            token = lexer.yylex();
-
-            Variable_prime();
-        }
-        else {
-            // TODO
-            System.out.println("Variable");
-        }
+        Match(TokenCode.IDENTIFIER);
+        Variable_prime();
     }
 
     public static void Variable_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.LBRACKET) {
-            token = lexer.yylex();
-            if (token.getTokenCode() == TokenCode.NUMBER) {
-                token = lexer.yylex();
-                if (token.getTokenCode() == TokenCode.RBRACKET) {
-                    token = lexer.yylex();
-                }
-                else {
-                    // TODO
-                    System.out.println("Variable_prime - token.getTokenCode() == TokenCode.RBACKET");
-                }
-            }
-            else {
-                // TODO
-                System.out.println("Variable_prime - token.getTokenCode() == TokenCode.NUMBER");
-            }
+            Match(TokenCode.LBRACKET);
+            Match(TokenCode.NUMBER);
+            Match(TokenCode.RBRACKET);
         }
         // epsilon
     }
@@ -148,60 +97,21 @@ public class Parser {
     }
 
     public static void Method_declaration() throws IOException {
-        if (token.getTokenCode() == TokenCode.STATIC) {
-            token = lexer.yylex();
-            Method_return_type();
-            //token = lexer.yylex();
-            if (token.getTokenCode() == TokenCode.IDENTIFIER) {
-                token = lexer.yylex();
-                if (token.getTokenCode() == TokenCode.LPAREN) {
-                    token = lexer.yylex();
-                    Parameters();
-                    if (token.getTokenCode() == TokenCode.RPAREN) {
-                        token = lexer.yylex();
-                        if (token.getTokenCode() == TokenCode.LBRACE) {
-                            token = lexer.yylex();
-                            Variable_declarations();
-                            //token = lexer.yylex();
-                            Statement_list();
-                            if (token.getTokenCode() == TokenCode.RBRACE) {
-                                token = lexer.yylex();
-                            }
-                            else {
-                                // TODO
-                                System.out.println("Method_declaration - token.getTokenCode() == TokenCode.RBRACE");
-                            }
-                        }
-                        else {
-                            // TODO
-                            System.out.println("Method_declaration - token.getTokenCode() == TokenCode.LBRACE");
-                        }
-                    }
-                    else {
-                        // TODO
-                        System.out.println("Method_declaration - token.getTokenCode() == TokenCode.RPAREN");
-                    }
-                }
-                else {
-                    // TODO
-                    System.out.println("Method_declaration - token.getTokenCode() == TokenCode.LPAREN");
-                }
-            }
-            else {
-                // TODO
-                System.out.println("Method_declaration - token.getTokenCode() == TokenCode.IDENTIFIER");
-            }
-        }
-        else {
-            // TODO
-            System.out.println("Method_declaration - token.getTokenCode() == TokenCode.STATIC");
-            System.out.println("\tTokenCode: " + token.getTokenCode());
-        }
+        Match(TokenCode.STATIC);
+        Method_return_type();
+        Match(TokenCode.IDENTIFIER);
+        Match(TokenCode.LPAREN);
+        Parameters();
+        Match(TokenCode.RPAREN);
+        Match(TokenCode.LBRACE);
+        Variable_declarations();
+        Statement_list();
+        Match(TokenCode.RBRACE);
     }
 
     public static void Method_return_type() throws IOException {
         if (token.getTokenCode() == TokenCode.VOID) {
-            token = lexer.yylex();
+            Match(TokenCode.VOID);
         }
         else {
             Type();
@@ -218,30 +128,16 @@ public class Parser {
 
     public static void Parameter_list() throws IOException {
         Type();
-        //token = lexer.yylex();
-        if (token.getTokenCode() == TokenCode.IDENTIFIER) {
-            token = lexer.yylex();
-            Parameter_list_prime();
-        }
-        else {
-            // TODO
-            System.out.println("Parameter_list");
-        }
+        Match(TokenCode.IDENTIFIER);
+        Parameter_list_prime();
     }
 
     public static void Parameter_list_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.COMMA) {
-            token = lexer.yylex();
+            Match(TokenCode.COMMA);
             Type();
-            //token = lexer.yylex();
-            if (token.getTokenCode() == TokenCode.IDENTIFIER) {
-                token = lexer.yylex();
-                Parameter_list_prime();
-            }
-            else {
-                // TODO
-                System.out.println("Parameter_list_prime");
-            }
+            Match(TokenCode.IDENTIFIER);
+            Parameter_list_prime();
         }
         // epsilon
     }
@@ -256,7 +152,6 @@ public class Parser {
                 || token.getTokenCode() == TokenCode.CONTINUE
                 || token.getTokenCode() == TokenCode.LBRACE) {
             Statement();
-            //token = lexer.yylex();
             Statement_list();
         }
         // epsilon
@@ -264,112 +159,42 @@ public class Parser {
 
     public static void Statement() throws IOException {
         if (token.getTokenCode() == TokenCode.IDENTIFIER) {
-            token = lexer.yylex();
+            Match(TokenCode.IDENTIFIER);
             Statement_prime();
         }
         else if (token.getTokenCode() == TokenCode.IF) {
-            token = lexer.yylex();
-            if (token.getTokenCode() == TokenCode.LPAREN) {
-                token = lexer.yylex();
-                Expression();
-                //token = lexer.yylex();
-                if (token.getTokenCode() == TokenCode.RPAREN) {
-                    token = lexer.yylex();
-                    Statement_block();
-                    //token = lexer.yylex(); // TODO: maybe move this into Optional_else()
-                    Optional_else();
-                }
-                else {
-                    // TODO
-                    System.out.println("Statement - token.getTokenCode() == TokenCode.RPAREN");
-                }
-            }
-            else {
-                // TODO
-                System.out.println("Statement - token.getTokenCode() == TokenCode.LPAREN");
-            }
+            Match(TokenCode.IF);
+            Match(TokenCode.LPAREN);
+            Expression();
+            Match(TokenCode.RPAREN);
+            Statement_block();
+            Optional_else();
         }
         else if (token.getTokenCode() == TokenCode.FOR) {
-            token = lexer.yylex();
-            if (token.getTokenCode() == TokenCode.LPAREN) {
-                token = lexer.yylex();
-                Variable_loc();
-                //token = lexer.yylex();
-                if (token.getTokenCode() == TokenCode.ASSIGNOP) {
-                    token = lexer.yylex();
-                    Expression();
-                    //token = lexer.yylex();
-                    if (token.getTokenCode() == TokenCode.SEMICOLON) {
-                        token = lexer.yylex();
-                        Expression();
-                        //token = lexer.yylex();
-                        if (token.getTokenCode() == TokenCode.SEMICOLON) {
-                            token = lexer.yylex();
-                            Incr_decr_var();
-                            //token = lexer.yylex();
-                            if (token.getTokenCode() == TokenCode.RPAREN) {
-                                token = lexer.yylex();
-                                Statement_block();
-                            }
-                            else {
-                                // TODO
-                                System.out.println("Statement - token.getTokenCode() == TokenCode.RPAREN");
-                            }
-                        }
-                        else {
-                            // TODO
-                            System.out.println("Statement - token.getTokenCode() == TokenCode.SEMICOLON1");
-                        }
-                    }
-                    else {
-                        // TODO
-                        System.out.println("Statement - token.getTokenCode() == TokenCode.SEMICOLON2");
-                    }
-                }
-                else {
-                    // TODO
-                    System.out.println("Statement - token.getTokenCode() == TokenCode.ASSIGNOP");
-
-                }
-            }
-            else {
-                // TODO
-                System.out.println("Statement - token.getTokenCode() == TokenCode.LPAREN");
-            }
-
+            Match(TokenCode.FOR);
+            Match(TokenCode.LPAREN);
+            Variable_loc();
+            Match(TokenCode.ASSIGNOP);
+            Expression();
+            Match(TokenCode.SEMICOLON);
+            Expression();
+            Match(TokenCode.SEMICOLON);
+            Incr_decr_var();
+            Match(TokenCode.RPAREN);
+            Statement_block();
         }
         else if (token.getTokenCode() == TokenCode.RETURN) {
-            token = lexer.yylex(); // TODO: maybe move this into Optional_expression
+            Match(TokenCode.RETURN);
             Optional_expression();
-            //token = lexer.yylex();
-            if (token.getTokenCode() == TokenCode.SEMICOLON) {
-                token = lexer.yylex();
-            }
-            else {
-                // TODO
-                System.out.println("Statement - token.getTokenCode() == TokenCode.SEMICOLON3");
-
-            }
+            Match(TokenCode.SEMICOLON);
         }
         else if (token.getTokenCode() == TokenCode.BREAK) {
-            token = lexer.yylex();
-            if (token.getTokenCode() == TokenCode.SEMICOLON) {
-                token = lexer.yylex();
-            }
-            else {
-                // TODO
-                System.out.println("Statement - token.getTokenCode() == TokenCode.SEMICOLON4");
-            }
+            Match(TokenCode.BREAK);
+            Match(TokenCode.SEMICOLON);
         }
         else if (token.getTokenCode() == TokenCode.CONTINUE) {
-            token = lexer.yylex();
-            if (token.getTokenCode() == TokenCode.SEMICOLON) {
-                token = lexer.yylex();
-            }
-            else {
-                // TODO
-                System.out.println("Statement - token.getTokenCode() == TokenCode.SEMICOLON5");
-            }
+            Match(TokenCode.CONTINUE);
+            Match(TokenCode.SEMICOLON);
         }
         else {
             Statement_block();
@@ -378,52 +203,29 @@ public class Parser {
 
     public static void Statement_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.LPAREN) {
-            token = lexer.yylex();
+            Match(TokenCode.LPAREN);
             Expression_list();
-            //token = lexer.yylex();
-            if (token.getTokenCode() == TokenCode.RPAREN) {
-                token = lexer.yylex();
-                if (token.getTokenCode() == TokenCode.SEMICOLON) {
-                    token = lexer.yylex();
-                }
-            }
-            else {
-                System.out.println("Statement_prime");
-                // TODO
-            }
+            Match(TokenCode.RPAREN);
+            Match(TokenCode.SEMICOLON);
         }
         else {
             Variable_loc_prime();
-            //token = lexer.yylex();
             Statement_prime_prime();
         }
     }
 
     public static void Statement_prime_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.ASSIGNOP) {
-            token = lexer.yylex();
+            Match(TokenCode.ASSIGNOP);
             Expression();
-            //token = lexer.yylex();
-            if (token.getTokenCode() == TokenCode.SEMICOLON) {
-                token = lexer.yylex();
-            }
-            else {
-                System.out.println("Statement_prime_prime - token.getTokenCode() == TokenCode.SEMICOLON1");
-                // TODO
-            }
+            Match(TokenCode.SEMICOLON);
         }
         else if (token.getTokenCode() == TokenCode.INCDECOP) {
-            token = lexer.yylex();
-            if (token.getTokenCode() == TokenCode.SEMICOLON) {
-                token = lexer.yylex();
-            }
-            else {
-                System.out.println("Statement_prime_prime - token.getTokenCode() == TokenCode.SEMICOLON2");
-            }
+            Match(TokenCode.INCDECOP);
+            Match(TokenCode.SEMICOLON);
         }
         else {
             System.out.println("Statement_prime_prime - token.getTokenCode() == TokenCode.INCDECOP || token.getTokenCode() == TokenCode.ASSIGNOP");
-
             // TODO
         }
     }
@@ -443,40 +245,19 @@ public class Parser {
     }
 
     public static void Statement_block() throws IOException {
-        if (token.getTokenCode() == TokenCode.LBRACE) {
-            token = lexer.yylex();
-            Statement_list();
-            //token = lexer.yylex();
-            if (token.getTokenCode() == TokenCode.RBRACE) {
-                token = lexer.yylex();
-            }
-            else {
-                System.out.println("Statement_block - token.getTokenCode() == TokenCode.RBRACE");
-                // TODO
-            }
-        }
-        else {
-            System.out.println("Statement_block - token.getTokenCode() == TokenCode.LBRACE");
-
-            // TODO
-        }
+        Match(TokenCode.LBRACE);
+        Statement_list();
+        Match(TokenCode.RBRACE);
     }
 
     public static void Incr_decr_var() throws IOException {
         Variable_loc();
-        //token = lexer.yylex();
-        if (token.getTokenCode() == TokenCode.INCDECOP) {
-            token = lexer.yylex();
-        }
-        else {
-            System.out.println("Incr_decr_var");
-            // TODO
-        }
+        Match(TokenCode.INCDECOP);
     }
 
     public static void Optional_else() throws IOException {
         if (token.getTokenCode() == TokenCode.ELSE) {
-            token = lexer.yylex();
+            Match(TokenCode.ELSE);
             Statement_block();
         }
         // epsilon
@@ -654,11 +435,8 @@ public class Parser {
 
     public static void Sign() throws IOException {
         if (token.getTokenCode() == TokenCode.ADDOP) {
-            if (token.getOpType() == OpType.PLUS) {
-                token = lexer.yylex();
-            }
-            else if (token.getOpType() == OpType.MINUS) {
-                token = lexer.yylex();
+            if (token.getOpType() == OpType.PLUS || token.getOpType() == OpType.MINUS) {
+                Match(TokenCode.ADDOP);
             }
             else {
 
@@ -671,5 +449,15 @@ public class Parser {
 
             // TODO
         }
+    }
+
+    private static boolean Match(TokenCode tc) throws IOException {
+        if (token.getTokenCode() != tc) {
+            System.out.println("Error: line number " + token.getLineNumber() + ", column " + token.getColumn());
+            System.out.println("Expected: " + tc + ", got: " + token.getTokenCode());
+            return false;
+        }
+        token = lexer.yylex();
+        return true;
     }
 }
