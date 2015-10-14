@@ -83,8 +83,9 @@ id = {letter_} ( {letter_} | {digit} )*
 // Numbers
 digits = {digit}+
 optional_fraction = (\.{digits})?
-optional_exponent = ("E" ("+" | "−")? {digits})?
-num = {digits} {optional_fraction} {optional_exponent}
+optional_exponent = ( "E" (-|\+)? {digits})?
+realNum = {digits} {optional_fraction} {optional_exponent}
+intNum = {digits}
 
 // Operators
 incdecop = "++" | "--"
@@ -151,15 +152,11 @@ semicolon = ";"
        return new Token(TokenCode.IDENTIFIER, DataType.ID, OpType.NONE, stEntry, yyline, yycolumn);
      }
 
-{num} { SymbolTableEntry stEntry = SymbolTable.AddEntry(yytext());
-        try {
-            Integer.parseInt(yytext());
+{intNum} { SymbolTableEntry stEntry = SymbolTable.AddEntry(yytext());
+           return new Token(TokenCode.NUMBER, DataType.INT, OpType.NONE, stEntry, yyline, yycolumn); }
 
-            return new Token(TokenCode.NUMBER, DataType.INT, OpType.NONE, stEntry, yyline, yycolumn);
-        } catch (NumberFormatException e) {
-            return new Token(TokenCode.NUMBER, DataType.REAL, OpType.NONE, stEntry, yyline, yycolumn);
-        }
-      }
+{realNum} { SymbolTableEntry stEntry = SymbolTable.AddEntry(yytext());
+            return new Token(TokenCode.NUMBER, DataType.REAL, OpType.NONE, stEntry, yyline, yycolumn); }
 
 {incdecop} { return new Token(TokenCode.INCDECOP, DataType.OP, GetOpType(yytext()), null, yyline, yycolumn); }
 

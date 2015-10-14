@@ -2,6 +2,7 @@ class Program {
 	/* This is a simple test program */
 	int i, j;
 	real number;
+	number = 12.34E-7;
 
 	static void main() {
 		i = 0;

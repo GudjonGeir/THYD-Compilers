@@ -409,12 +409,6 @@ public class Parser {
             }
             else {
                 System.out.println("Statement_prime_prime - token.getTokenCode() == TokenCode.SEMICOLON1");
-                token = lexer.yylex();
-                token = lexer.yylex();
-                token = lexer.yylex();
-                token = lexer.yylex();
-                token = lexer.yylex();
-
                 // TODO
             }
         }

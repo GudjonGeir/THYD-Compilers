@@ -16,7 +16,7 @@ class Program {
 
   static void main() {
     x = 1;
-    y = 2.0 * (3.14);
+    y = 2.0 * (3.14E+3);
     x++;
     if (x > 9) {
       y = 123.45E-3;
