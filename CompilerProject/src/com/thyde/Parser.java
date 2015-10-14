@@ -11,39 +11,17 @@ import java.util.List;
 public class Parser {
     private static Lexer lexer;
     private static Token token;
-    //private static String[] codeLines = makeCodeLines();
+    private static String[] codeLines;
 
-    public static String[] makeCodeLines(){
-
-        String line = " ";
-
-        Scanner code = null;
-        try {
-            code = new Scanner(new File("test.txt")).useDelimiter(",\\s*");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        List<String> codeLinesTemp = new ArrayList<String>();
-
-        while (code.hasNext()) {
-            line = code.next();
-            codeLinesTemp.add(line);
-        }
-        code.close();
-
-        String[] codeLines = codeLinesTemp.toArray(new String[0]);
-        return codeLines;
-
-    }
 
     public static void main(String[] args) throws IOException {
-        Parse(new FileReader(args[0]));
+        Parse(args[0]);
     }
 
-    public static void Parse(FileReader fr) throws IOException {
-        lexer = new Lexer(fr);
+    public static void Parse(String filePath) throws IOException {
+        lexer = new Lexer(new FileReader(filePath));
         token = lexer.yylex();
+        codeLines = makeCodeLines(filePath);
         Program();
         Match(TokenCode.EOF);
         System.out.println("No errors");
@@ -481,11 +459,48 @@ public class Parser {
 
     private static boolean Match(TokenCode tc) throws IOException {
         if (token.getTokenCode() != tc) {
-            System.out.println("Error: line number " + token.getLineNumber() + ", column " + token.getColumn());
-            System.out.println("Expected: " + tc + ", got: " + token.getTokenCode());
+            String lineNumber = (token.getLineNumber() + 1) + " : ";
+
+            System.out.println(lineNumber + codeLines[token.getLineNumber()]);
+            for (int i = 0; i < lineNumber.length() + token.getColumn(); i++) {
+                System.out.print(" ");
+            }
+            System.out.println("^ Expected: " + tc + ", got: " + token.getTokenCode());
+//            System.out.println("Error: line number " + token.getLineNumber() + ", column " + token.getColumn());
+//            System.out.println("Expected: " + tc + ", got: " + token.getTokenCode());
             return false;
+        }
+        else if (token.getTokenCode() == TokenCode.ERR_ILL_CHAR) {
+
+        }
+        else if (token.getTokenCode() == TokenCode.ERR_LONG_ID) {
+
         }
         token = lexer.yylex();
         return true;
     }
+
+    public static String[] makeCodeLines(String filePath){
+
+        String line;
+
+        Scanner code = null;
+        try {
+            code = new Scanner(new File(filePath)).useDelimiter("\n");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            System.exit(-1);
+        }
+
+        List<String> codeLinesTemp = new ArrayList<String>();
+
+        while (code.hasNext()) {
+            line = code.next();
+            codeLinesTemp.add(line);
+        }
+        code.close();
+
+        return codeLinesTemp.toArray(new String[codeLinesTemp.size()]);
+    }
+
 }
