@@ -1,17 +1,16 @@
 package com.thyde;
 
 import java.io.FileNotFoundException;
-import java.util.Scanner;
+import java.util.*;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Parser {
     private static Lexer lexer;
     private static Token token;
     private static String[] codeLines;
+    private static HashMap<String, List<TokenCode>> syncSets;
 
 
     public static void main(String[] args) throws IOException {
@@ -22,6 +21,44 @@ public class Parser {
         lexer = new Lexer(new FileReader(filePath));
         token = lexer.yylex();
         codeLines = makeCodeLines(filePath);
+
+
+        syncSets.put("program", Arrays.asList(TokenCode.EOF));
+        syncSets.put("variable_declarations", Arrays.asList(TokenCode.IDENTIFIER, TokenCode.IF, TokenCode.FOR, TokenCode.RETURN, TokenCode.BREAK, TokenCode.CONTINUE, TokenCode.LBRACE, TokenCode.STATIC));
+        syncSets.put("type", Arrays.asList(TokenCode.IDENTIFIER));
+        syncSets.put("variable_list", Arrays.asList(TokenCode.SEMICOLON));
+        syncSets.put("variable_list'", Arrays.asList(TokenCode.SEMICOLON));
+        syncSets.put("variable", Arrays.asList(TokenCode.COMMA, TokenCode.SEMICOLON));
+        syncSets.put("variable'", Arrays.asList(TokenCode.COMMA, TokenCode.SEMICOLON));
+        syncSets.put("method_declarations", Arrays.asList(TokenCode.RBRACE));
+        syncSets.put("more_method_declarations", Arrays.asList(TokenCode.RBRACE));
+        syncSets.put("method_declaration", Arrays.asList(TokenCode.STATIC, TokenCode.RBRACE));
+        syncSets.put("method_return_type", Arrays.asList(TokenCode.IDENTIFIER));
+        syncSets.put("parameters", Arrays.asList(TokenCode.RPAREN));
+        syncSets.put("parameter_list", Arrays.asList(TokenCode.RPAREN));
+        syncSets.put("parameter_list'", Arrays.asList(TokenCode.RPAREN));
+        syncSets.put("statement_list", Arrays.asList(TokenCode.RBRACE));
+        syncSets.put("statement", Arrays.asList(TokenCode.IDENTIFIER, TokenCode.IF, TokenCode.FOR, TokenCode.RETURN, TokenCode.BREAK, TokenCode.CONTINUE, TokenCode.LBRACE, TokenCode.RBRACE));
+        syncSets.put("statement'", Arrays.asList(TokenCode.IDENTIFIER, TokenCode.IF, TokenCode.FOR, TokenCode.RETURN, TokenCode.BREAK, TokenCode.CONTINUE, TokenCode.LBRACE, TokenCode.RBRACE));
+        syncSets.put("statement''", Arrays.asList(TokenCode.IDENTIFIER, TokenCode.IF, TokenCode.FOR, TokenCode.RETURN, TokenCode.BREAK, TokenCode.CONTINUE, TokenCode.LBRACE, TokenCode.RBRACE));
+        syncSets.put("optional_expression", Arrays.asList(TokenCode.SEMICOLON));
+        syncSets.put("statement_block", Arrays.asList(TokenCode.ELSE, TokenCode.IDENTIFIER, TokenCode.IF, TokenCode.FOR, TokenCode.RETURN, TokenCode.BREAK, TokenCode.CONTINUE, TokenCode.LBRACE, TokenCode.RBRACE));
+        syncSets.put("incr_decr_var", Arrays.asList(TokenCode.RPAREN));
+        syncSets.put("optional_else", Arrays.asList(TokenCode.IDENTIFIER, TokenCode.IF, TokenCode.FOR, TokenCode.RETURN, TokenCode.BREAK, TokenCode.CONTINUE, TokenCode.LBRACE, TokenCode.RBRACE));
+        syncSets.put("expression_list", Arrays.asList(TokenCode.RPAREN));
+        syncSets.put("more_expressions", Arrays.asList(TokenCode.RPAREN));
+        syncSets.put("expression", Arrays.asList(TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
+        syncSets.put("expression'", Arrays.asList(TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
+        syncSets.put("simple_expression", Arrays.asList(TokenCode.RELOP, TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
+        syncSets.put("simple_expression'", Arrays.asList(TokenCode.RELOP, TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
+        syncSets.put("term", Arrays.asList(TokenCode.ADDOP, TokenCode.RELOP, TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
+        syncSets.put("term'", Arrays.asList(TokenCode.ADDOP, TokenCode.RELOP, TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
+        syncSets.put("factor", Arrays.asList(TokenCode.MULOP, TokenCode.ADDOP, TokenCode.RELOP, TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
+        syncSets.put("factor'", Arrays.asList(TokenCode.MULOP, TokenCode.ADDOP, TokenCode.RELOP, TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
+        syncSets.put("variable_loc", Arrays.asList(TokenCode.INCDECOP, TokenCode.ASSIGNOP));
+        syncSets.put("variable_loc'", Arrays.asList(TokenCode.ASSIGNOP, TokenCode.INCDECOP, TokenCode.MULOP, TokenCode.ADDOP, TokenCode.RELOP, TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
+        syncSets.put("sign", Arrays.asList(TokenCode.IDENTIFIER, TokenCode.NUMBER, TokenCode.LPAREN, TokenCode.NOT));
+
         Program();
         Match(TokenCode.EOF);
         System.out.println("No errors");
@@ -410,7 +447,10 @@ public class Parser {
     public static void Sign() throws IOException {
         if (token.getTokenCode() == TokenCode.ADDOP) {
             if (token.getOpType() == OpType.PLUS || token.getOpType() == OpType.MINUS) {
-                Match(TokenCode.ADDOP);
+                if(!Match(TokenCode.ADDOP)) {
+                    Sync("sign");
+                    return;
+                }
             }
             else {
 
@@ -446,6 +486,15 @@ public class Parser {
         }
         token = lexer.yylex();
         return true;
+    }
+
+    private static void Sync(String nonTerminal){
+        while (token.getTokenCode() != TokenCode.EOF) {
+            token = lexer.yylex();
+            if (syncSets.get(nonTerminal).contains(token.getTokenCode())) {
+                return;
+            }
+        }
     }
 
     public static String[] makeCodeLines(String filePath){
