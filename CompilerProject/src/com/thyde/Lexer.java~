@@ -713,7 +713,7 @@ class Lexer {
 
       if (zzInput == YYEOF && zzStartRead == zzCurrentPos) {
         zzAtEOF = true;
-          {     return new Token(TokenCode.EOF, DataType.NONE, OpType.NONE, null);
+          {     return new Token(TokenCode.EOF, DataType.NONE, OpType.NONE, null, yyline, yycolumn);
  }
       }
       else {
