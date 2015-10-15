@@ -11,21 +11,25 @@ public class Parser {
     private static Token currentToken;
     private static Token prevToken;
     private static String[] codeLines;
+    // Hash map with the name of the nonterminal as key and a list of TokenCodes as value
     private static HashMap<String, List<TokenCode>> syncSets;
     private static int errorCounter;
+    // Handles the case where eof has been reached so we don't get
+    // the same error more than once
+    private static boolean eofReached;
 
 
     public static void main(String[] args) throws IOException {
         Parse(args[0]);
     }
-    // TODO:
-    // Comment helper functions
+
 
     public static void Parse(String filePath) throws IOException {
         lexer = new Lexer(new FileReader(filePath));
         currentToken = lexer.yylex();
         codeLines = MakeCodeLines(filePath);
         errorCounter = 0;
+        eofReached = false;
 
         syncSets = new HashMap<String, List<TokenCode>>();
         syncSets.put("program", Arrays.asList(TokenCode.EOF));
@@ -210,9 +214,7 @@ public class Parser {
 
     private static void Method_return_type() throws IOException {
         if (currentToken.getTokenCode() == TokenCode.VOID) {
-            if(!Match(TokenCode.VOID)){
-                Sync("method_return_type");
-            }
+            Match(TokenCode.VOID);
         }
         else {
             Type();
@@ -269,17 +271,11 @@ public class Parser {
 
     private static void Statement() throws IOException {
         if (currentToken.getTokenCode() == TokenCode.IDENTIFIER) {
-            if(!Match(TokenCode.IDENTIFIER)) {
-                Sync("statement");
-                return;
-            }
+            Match(TokenCode.IDENTIFIER);
             Statement_prime();
         }
         else if (currentToken.getTokenCode() == TokenCode.IF) {
-            if(!Match(TokenCode.IF)){
-                Sync("statement");
-                return;
-            }
+            Match(TokenCode.IF);
             if(!Match(TokenCode.LPAREN)){
                 Sync("statement");
                 return;
@@ -293,10 +289,7 @@ public class Parser {
             Optional_else();
         }
         else if (currentToken.getTokenCode() == TokenCode.FOR) {
-            if(!Match(TokenCode.FOR)) {
-                Sync("statement");
-                return;
-            }
+            Match(TokenCode.FOR);
             if(!Match(TokenCode.LPAREN)) {
                 Sync("statement");
                 return;
@@ -324,29 +317,20 @@ public class Parser {
             Statement_block();
         }
         else if (currentToken.getTokenCode() == TokenCode.RETURN) {
-            if(!Match(TokenCode.RETURN)) {
-                Sync("statement");
-                return;
-            }
+            Match(TokenCode.RETURN);
             Optional_expression();
             if(!Match(TokenCode.SEMICOLON)) {
                 Sync("statement");
             }
         }
         else if (currentToken.getTokenCode() == TokenCode.BREAK) {
-            if(!Match(TokenCode.BREAK)) {
-                Sync("statement");
-                return;
-            }
+            Match(TokenCode.BREAK);
             if(!Match(TokenCode.SEMICOLON)) {
                 Sync("statement");
             }
         }
         else if (currentToken.getTokenCode() == TokenCode.CONTINUE) {
-            if(!Match(TokenCode.CONTINUE)) {
-                Sync("statement");
-                return;
-            }
+            Match(TokenCode.CONTINUE);
             if(!Match(TokenCode.SEMICOLON)) {
                 Sync("statement");
             }
@@ -358,10 +342,7 @@ public class Parser {
 
     private static void Statement_prime() throws IOException {
         if (currentToken.getTokenCode() == TokenCode.LPAREN) {
-            if(!Match(TokenCode.LPAREN)) {
-                Sync("statement'");
-                return;
-            }
+            Match(TokenCode.LPAREN);
             Expression_list();
             if(!Match(TokenCode.RPAREN)) {
                 Sync("statement'");
@@ -379,20 +360,14 @@ public class Parser {
 
     private static void Statement_prime_prime() throws IOException {
         if (currentToken.getTokenCode() == TokenCode.ASSIGNOP) {
-            if(!Match(TokenCode.ASSIGNOP)) {
-                Sync("statement''");
-                return;
-            }
+            Match(TokenCode.ASSIGNOP);
             Expression();
             if(!Match(TokenCode.SEMICOLON)) {
                 Sync("statement''");
             }
         }
         else if (currentToken.getTokenCode() == TokenCode.INCDECOP) {
-            if(!Match(TokenCode.INCDECOP)){
-                Sync("statement''");
-                return;
-            }
+            Match(TokenCode.INCDECOP);
             if(!Match(TokenCode.SEMICOLON)){
                 Sync("statement''");
             }
@@ -437,10 +412,7 @@ public class Parser {
 
     private static void Optional_else() throws IOException {
         if (currentToken.getTokenCode() == TokenCode.ELSE) {
-            if(!Match(TokenCode.ELSE)){
-                    Sync("optional_else");
-                    return;
-            }
+            Match(TokenCode.ELSE);
             Statement_block();
         }
         // epsilon
@@ -463,10 +435,7 @@ public class Parser {
 
     private static void More_expressions() throws IOException {
         if (currentToken.getTokenCode() == TokenCode.COMMA) {
-            if(!Match(TokenCode.COMMA)) {
-                Sync("more_expressions");
-                return;
-            }
+            Match(TokenCode.COMMA);
             Expression();
             More_expressions();
         }
@@ -480,10 +449,7 @@ public class Parser {
 
     private static void Expression_prime() throws IOException {
         if (currentToken.getTokenCode() == TokenCode.RELOP) {
-            if (!Match(TokenCode.RELOP)) {
-                Sync("expression'");
-                return;
-            }
+            Match(TokenCode.RELOP);
             Simple_expression();
         }
         // epsilon
@@ -514,10 +480,7 @@ public class Parser {
 
     private static void Simple_expression_prime() throws IOException {
         if (currentToken.getTokenCode() == TokenCode.ADDOP) {
-            if(!Match(TokenCode.ADDOP)){
-                Sync("simple_expression'");
-                return;
-            }
+            Match(TokenCode.ADDOP);
             Term();
             Simple_expression_prime();
         }
@@ -531,10 +494,7 @@ public class Parser {
 
     private static void Term_prime() throws IOException {
         if (currentToken.getTokenCode() == TokenCode.MULOP) {
-            if(!Match(TokenCode.MULOP)){
-                Sync("term'");
-                return;
-            }
+            Match(TokenCode.MULOP);
             Factor();
             Term_prime();
         }
@@ -543,47 +503,31 @@ public class Parser {
 
     private static void Factor() throws IOException {
         if (currentToken.getTokenCode() == TokenCode.IDENTIFIER) {
-            if(!Match(TokenCode.IDENTIFIER)){
-                if(!Match(TokenCode.LPAREN)){
-                    Sync("factor");
-                    return;
-                }
-            }
+            Match(TokenCode.IDENTIFIER);
             Factor_prime();
         }
         else if (currentToken.getTokenCode() == TokenCode.NUMBER) {
-            if(!Match(TokenCode.NUMBER)){
-                Sync("factor");
-            }
+            Match(TokenCode.NUMBER);
         }
         else if (currentToken.getTokenCode() == TokenCode.LPAREN) {
-            if(!Match(TokenCode.LPAREN)){
-                Sync("factor");
-                return;
-            }
+            Match(TokenCode.LPAREN);
             Expression();
             if(!Match(TokenCode.RPAREN)){
                 Sync("factor");
             }
         }
         else if (currentToken.getTokenCode() == TokenCode.NOT) {
-            if(!Match(TokenCode.NOT)){
-                Sync("factor");
-                return;
-            }
+            Match(TokenCode.NOT);
             Factor();
         }
         else {
-            // This will never happen
+            // This will never happen because simple_expression handles it
         }
     }
 
     private static void Factor_prime() throws IOException {
         if (currentToken.getTokenCode() == TokenCode.LPAREN) {
-            if(!Match(TokenCode.LPAREN)){
-                Sync("factor'");
-                return;
-            }
+            Match(TokenCode.LPAREN);
             Expression_list();
             if(!Match(TokenCode.RPAREN)){
                 Sync("factor'");
@@ -595,19 +539,13 @@ public class Parser {
     }
 
     private static void Variable_loc() throws IOException {
-        if(!Match(TokenCode.IDENTIFIER)){
-            Sync("variable_loc");
-            return;
-        }
+        Match(TokenCode.IDENTIFIER);
         Variable_loc_prime();
     }
 
     private static void Variable_loc_prime() throws IOException {
         if (currentToken.getTokenCode() == TokenCode.LBRACKET) {
-            if(!Match(TokenCode.LBRACKET)){
-                Sync("variable_loc'");
-                return;
-            }
+            Match(TokenCode.LBRACKET);
             Expression();
             if(!Match(TokenCode.RBRACKET)){
                 Sync("variable_loc'");
@@ -619,9 +557,7 @@ public class Parser {
     private static void Sign() throws IOException {
         if (currentToken.getTokenCode() == TokenCode.ADDOP) {
             if (currentToken.getOpType() == OpType.PLUS || currentToken.getOpType() == OpType.MINUS) {
-                if(!Match(TokenCode.ADDOP)) {
-                    Sync("sign");
-                }
+                Match(TokenCode.ADDOP);
             }
             else {
                 // This never happens
@@ -632,14 +568,22 @@ public class Parser {
         }
     }
 
+    // Matches current token to the provided TokenCode, returns true if it matches
+    // false if it does not.
+    // Handles special cases of ERR_LONG_ID and, ERR_ILL_CHAR and unexpected eof.
     private static boolean Match(TokenCode tc) throws IOException {
         if (currentToken.getTokenCode() != tc) {
+
+            // If the unmatched tokencode is ERR_LONG_ID then we handle it here so
+            // we don't get another error expecting a token
             if (currentToken.getTokenCode() == TokenCode.ERR_LONG_ID) {
                 PrintError(null, "longID", null);
                 return false;
             }
-            else if (currentToken.getTokenCode() == TokenCode.EOF) {
+
+            else if (currentToken.getTokenCode() == TokenCode.EOF && eofReached == false) {
                 PrintError(null, "unexpectedEOF", null);
+                eofReached = true;
                 return false;
             }
             PrintError(tc, "expected", ConvertTokenCodeToString(tc));
@@ -654,12 +598,11 @@ public class Parser {
         return true;
     }
 
+    // Prints the error message to stdout
     private static void PrintError(TokenCode expectedToken, String errorType, String expected) {
 
-        // If the current token code is EOF and the error type is not unexpectedEOF we don't
-        // handle any more errors because we know that they're all caused by the EOF that we've
-        // already handled
-        if (currentToken.getTokenCode() == TokenCode.EOF && !errorType.equals("unexpectedEOF")) {
+        // We only want to print unexpected eof once.
+        if (currentToken.getTokenCode() == TokenCode.EOF && eofReached == true) {
             return;
         }
         errorCounter++;
@@ -670,6 +613,9 @@ public class Parser {
 
 
         if (errorType.equals("expected")) {
+
+            // If the expected token is semicolon we want the error message carat
+            // to point behind the last token
             if (expectedToken == TokenCode.SEMICOLON) {
                 lineNr = prevToken.getLineNumber();
                 columnNr = prevToken.getColumn() + prevToken.getTokenText().length();
@@ -692,6 +638,9 @@ public class Parser {
             errorMessage = "End of class";
         }
         else if (errorType.equals("unexpectedEOF")) {
+
+            // If the error message is unexpected eof we want to point behind the
+            // last token to prevent out of bounds exception on the array of code lines
             lineNr = prevToken.getLineNumber();
             columnNr = prevToken.getColumn() + prevToken.getTokenText().length();
             errorMessage = "Unexpected end of file";
@@ -699,12 +648,16 @@ public class Parser {
         String errorLine = (lineNr + 1) + " : ";
 
         System.out.println(errorLine + codeLines[lineNr]);
+
+        // So pretty
         for (int i = 0; i < errorLine.length() + columnNr; i++) {
             System.out.print(" ");
         }
         System.out.println("^ " + errorMessage);
     }
 
+    // Pops tokens of the lexer stack until it finds either EOF or a token in the
+    // sync set for the given non-terminal
     private static void Sync(String nonTerminal) throws IOException {
         while (currentToken.getTokenCode() != TokenCode.EOF) {
             if (syncSets.get(nonTerminal).contains(currentToken.getTokenCode())) {
@@ -714,6 +667,8 @@ public class Parser {
         }
     }
 
+    // Splits the input file into an array of strings delimited by newlines.
+    // Used for displaying where an error occurred
     private static String[] MakeCodeLines(String filePath){
 
         String line;
@@ -737,6 +692,7 @@ public class Parser {
         return codeLinesTemp.toArray(new String[codeLinesTemp.size()]);
     }
 
+    // Takes an TokenCode and returns a corresponding string for error messages
     private static String ConvertTokenCodeToString(TokenCode tc) {
         if (tc == TokenCode.SEMICOLON) {
             return "';'";
@@ -785,5 +741,4 @@ public class Parser {
         }
         return "";
     }
-
 }

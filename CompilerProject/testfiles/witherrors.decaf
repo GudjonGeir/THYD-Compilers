@@ -21,15 +21,3 @@ class Program {
     if (x > ) {
       y = 123.45E-3;
       if (y > 2.0) {
-        x--
-        break;
-      }
-    }
-    else
-      y = test(3.3);
-
-    x = $ + 2;
-    test(y);
-  }
-}
-a
