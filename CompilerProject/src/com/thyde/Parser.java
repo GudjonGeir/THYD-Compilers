@@ -19,16 +19,12 @@ public class Parser {
         Parse(args[0]);
     }
     // TODO:
-    // Prettify error statements
     // Comment helper functions
-    // Change public functions to private
-    // use prevToken to point to missing semicolon
-    // Unexpected eof
 
     public static void Parse(String filePath) throws IOException {
         lexer = new Lexer(new FileReader(filePath));
         currentToken = lexer.yylex();
-        codeLines = makeCodeLines(filePath);
+        codeLines = MakeCodeLines(filePath);
         errorCounter = 0;
 
         syncSets = new HashMap<String, List<TokenCode>>();
@@ -70,7 +66,7 @@ public class Parser {
 
         Program();
         if(!Match(TokenCode.EOF)){
-            PrintError(null, "End of class");
+            PrintError(null, "End of class", null);
         }
 
         if (errorCounter == 0) {
@@ -98,7 +94,6 @@ public class Parser {
         Method_declarations();
         if(!Match(TokenCode.RBRACE)){
            Sync("program");
-           return;
         }
     }
 
@@ -124,7 +119,7 @@ public class Parser {
             Match(TokenCode.REAL);
         }
         else {
-            PrintError(TokenCode.INT, "expected");
+            PrintError(null, "expected", "a type");
             Sync("type");
         }
     }
@@ -166,7 +161,6 @@ public class Parser {
             }
             if(!Match(TokenCode.RBRACKET)){
                 Sync("variable'");
-                return;
             }
         }
         // epsilon
@@ -213,7 +207,6 @@ public class Parser {
         Statement_list();
         if(!Match(TokenCode.RBRACE)){
             Sync("method_declaration");
-            return;
         }
     }
 
@@ -221,7 +214,6 @@ public class Parser {
         if (currentToken.getTokenCode() == TokenCode.VOID) {
             if(!Match(TokenCode.VOID)){
                 Sync("method_return_type");
-                return;
             }
         }
         else {
@@ -341,7 +333,6 @@ public class Parser {
             Optional_expression();
             if(!Match(TokenCode.SEMICOLON)) {
                 Sync("statement");
-                return;
             }
         }
         else if (currentToken.getTokenCode() == TokenCode.BREAK) {
@@ -351,7 +342,6 @@ public class Parser {
             }
             if(!Match(TokenCode.SEMICOLON)) {
                 Sync("statement");
-                return;
             }
         }
         else if (currentToken.getTokenCode() == TokenCode.CONTINUE) {
@@ -361,7 +351,6 @@ public class Parser {
             }
             if(!Match(TokenCode.SEMICOLON)) {
                 Sync("statement");
-                return;
             }
         }
         else {
@@ -382,7 +371,6 @@ public class Parser {
             }
             if(!Match(TokenCode.SEMICOLON)) {
                 Sync("statement'");
-                return;
             }
         }
         else {
@@ -400,7 +388,6 @@ public class Parser {
             Expression();
             if(!Match(TokenCode.SEMICOLON)) {
                 Sync("statement''");
-                return;
             }
         }
         else if (currentToken.getTokenCode() == TokenCode.INCDECOP) {
@@ -410,11 +397,10 @@ public class Parser {
             }
             if(!Match(TokenCode.SEMICOLON)){
                 Sync("statement''");
-                return;
             }
         }
         else {
-            PrintError(null, "invalidStatement");
+            PrintError(null, "invalidStatement", null);
             Sync("statement''");
         }
     }
@@ -441,7 +427,6 @@ public class Parser {
         Statement_list();
         if(!Match(TokenCode.RBRACE)) {
             Sync("statement_block");
-            return;
         }
     }
 
@@ -449,7 +434,6 @@ public class Parser {
         Variable_loc();
         if(!Match(TokenCode.INCDECOP)){
             Sync("incr_decr_var");
-            return;
         }
     }
 
@@ -525,7 +509,7 @@ public class Parser {
             Simple_expression_prime();
         }
         else {
-            PrintError(null, "invalidExpression");
+            PrintError(null, "invalidExpression", null);
             Sync("simple_expression");
         }
     }
@@ -554,7 +538,6 @@ public class Parser {
                 return;
             }
             Factor();
-            //currentToken = lexer.yylex();
             Term_prime();
         }
         // epsilon
@@ -573,7 +556,6 @@ public class Parser {
         else if (currentToken.getTokenCode() == TokenCode.NUMBER) {
             if(!Match(TokenCode.NUMBER)){
                 Sync("factor");
-                return;
             }
         }
         else if (currentToken.getTokenCode() == TokenCode.LPAREN) {
@@ -584,7 +566,6 @@ public class Parser {
             Expression();
             if(!Match(TokenCode.RPAREN)){
                 Sync("factor");
-                return;
             }
         }
         else if (currentToken.getTokenCode() == TokenCode.NOT) {
@@ -595,7 +576,7 @@ public class Parser {
             Factor();
         }
         else {
-            System.out.println("Factor");
+            // This will never happen
         }
     }
 
@@ -608,7 +589,6 @@ public class Parser {
             Expression_list();
             if(!Match(TokenCode.RPAREN)){
                 Sync("factor'");
-                return;
             }
         }
         else {
@@ -633,7 +613,6 @@ public class Parser {
             Expression();
             if(!Match(TokenCode.RBRACKET)){
                 Sync("variable_loc'");
-                return;
             }
         }
         // epsilon
@@ -644,7 +623,6 @@ public class Parser {
             if (currentToken.getOpType() == OpType.PLUS || currentToken.getOpType() == OpType.MINUS) {
                 if(!Match(TokenCode.ADDOP)) {
                     Sync("sign");
-                    return;
                 }
             }
             else {
@@ -658,26 +636,34 @@ public class Parser {
 
     private static boolean Match(TokenCode tc) throws IOException {
         if (currentToken.getTokenCode() != tc) {
-            PrintError(tc, "expected");
+            if (currentToken.getTokenCode() == TokenCode.ERR_LONG_ID) {
+                PrintError(null, "longID", null);
+                return false;
+            }
+            PrintError(tc, "expected", ConvertTokenCodeToString(tc));
             return false;
         }
         prevToken = currentToken;
         currentToken = lexer.yylex();
         if (currentToken.getTokenCode() == TokenCode.ERR_ILL_CHAR) {
-            PrintError(null, "illegalChar");
+            PrintError(null, "illegalChar", null);
             return false;
         }
-        else if (currentToken.getTokenCode() == TokenCode.ERR_LONG_ID) {
-            PrintError(null, "longID");
+        else if (currentToken.getTokenCode() == TokenCode.EOF && tc != TokenCode.EOF) {
+            PrintError(null, "unexpectedEOF", null);
             return false;
         }
-//        else if (currentToken.getTokenCode() == TokenCode.EOF && tc != TokenCode.EOF) {
-//            PrintError(null, "unexpectedEOF");
-//        }
         return true;
     }
 
-    private static void PrintError(TokenCode expectedToken, String errorType) {
+    private static void PrintError(TokenCode expectedToken, String errorType, String expected) {
+
+        // If the current token code is EOF and the error type is not unexpectedEOF we don't
+        // handle any more errors because we know that they're all caused by the EOF that we've
+        // already handled
+        if (currentToken.getTokenCode() == TokenCode.EOF && !errorType.equals("unexpectedEOF")) {
+            return;
+        }
         errorCounter++;
 
         String errorMessage = "";
@@ -688,9 +674,9 @@ public class Parser {
         if (errorType.equals("expected")) {
             if (expectedToken == TokenCode.SEMICOLON) {
                 lineNr = prevToken.getLineNumber();
-                columnNr = prevToken.getColumn();
+                columnNr = prevToken.getColumn() + prevToken.getTokenText().length();
             }
-             errorMessage = "Expected: " + expectedToken + ", got: " + currentToken.getTokenCode();
+            errorMessage = "Expected " + expected;
         }
         else if (errorType.equals("invalidStatement")) {
             errorMessage = "Invalid statement";
@@ -706,6 +692,7 @@ public class Parser {
         }
         else if (errorType.equals("unexpectedEOF")) {
             lineNr = prevToken.getLineNumber();
+            columnNr = prevToken.getColumn() + prevToken.getTokenText().length();
             errorMessage = "Unexpected end of file";
         }
         String errorLine = (lineNr + 1) + " : ";
@@ -726,7 +713,7 @@ public class Parser {
         }
     }
 
-    private static String[] makeCodeLines(String filePath){
+    private static String[] MakeCodeLines(String filePath){
 
         String line;
 
@@ -747,6 +734,52 @@ public class Parser {
         code.close();
 
         return codeLinesTemp.toArray(new String[codeLinesTemp.size()]);
+    }
+
+    private static String ConvertTokenCodeToString(TokenCode tc) {
+        if (tc == TokenCode.SEMICOLON) {
+            return "';'";
+        }
+        else if (tc == TokenCode.IDENTIFIER) {
+            return "an identifier";
+        }
+        else if (tc == TokenCode.NUMBER) {
+            return "a number";
+        }
+        else if (tc == TokenCode.ASSIGNOP) {
+            return "'='";
+        }
+        else if (tc == TokenCode.CLASS) {
+            return "'class'";
+        }
+        else if (tc == TokenCode.STATIC) {
+            return "'static'";
+        }
+        else if (tc == TokenCode.VOID) {
+            return "'void'";
+        }
+        else if (tc == TokenCode.LBRACE) {
+            return "'{'";
+        }
+        else if (tc == TokenCode.RBRACE) {
+            return "'}'";
+        }
+        else if (tc == TokenCode.LBRACKET) {
+            return "'['";
+        }
+        else if (tc == TokenCode.RBRACKET) {
+            return "']'";
+        }
+        else if (tc == TokenCode.LPAREN) {
+            return "'('";
+        }
+        else if (tc == TokenCode.RPAREN) {
+            return "')'";
+        }
+        else if (tc == TokenCode.INT || tc == TokenCode.REAL) {
+            return "a type";
+        }
+        return "";
     }
 
 }

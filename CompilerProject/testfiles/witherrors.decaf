@@ -1,9 +1,9 @@
 /* A program without parsing errors */
 class Program {
-  int x;
+  int xjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj;
   real y;
 
-  static real test (real x) {
+  static test (real x) {
     real t[10];
     int i;
 
