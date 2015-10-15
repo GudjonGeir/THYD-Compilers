@@ -60,17 +60,32 @@ public class Parser {
         syncSets.put("sign", Arrays.asList(TokenCode.IDENTIFIER, TokenCode.NUMBER, TokenCode.LPAREN, TokenCode.NOT));
 
         Program();
-        Match(TokenCode.EOF);
+        if(!Match(TokenCode.EOF)){
+            //TODO
+            return;
+        }
         System.out.println("No errors");
     }
 
     public static void Program() throws IOException {
-        Match(TokenCode.CLASS);
-        Match(TokenCode.IDENTIFIER);
-        Match(TokenCode.LBRACE);
+        if(!Match(TokenCode.CLASS)) {
+            Sync("program");
+            return;
+        }
+        if(!Match(TokenCode.IDENTIFIER)){
+            Sync("program");
+            return;
+        }
+        if(!Match(TokenCode.LBRACE)){
+            Sync("program");
+            return;
+        }
         Variable_declarations();
         Method_declarations();
-        Match(TokenCode.RBRACE);
+       if(!Match(TokenCode.RBRACE)){
+           Sync("program");
+           return;
+       }
     }
 
     public static void Variable_declarations() throws IOException {
@@ -78,7 +93,10 @@ public class Parser {
         if (token.getTokenCode() == TokenCode.INT || token.getTokenCode() == TokenCode.REAL) {
             Type();
             Variable_list();
-            Match(TokenCode.SEMICOLON);
+            if(!Match(TokenCode.SEMICOLON)) {
+                Sync("variable_declarations");
+                return;
+            }
             Variable_declarations();
         }
         // epsilon
@@ -86,10 +104,16 @@ public class Parser {
 
     public static void Type() throws IOException {
         if (token.getTokenCode() == TokenCode.INT) {
-            Match(TokenCode.INT);
+            if(!Match(TokenCode.INT)){
+                Sync("type");
+                return;
+            }
         }
         else if (token.getTokenCode() == TokenCode.REAL) {
-            Match(TokenCode.REAL);
+            if(!Match(TokenCode.REAL)){
+                Sync("type");
+                return;
+            }
         }
         else {
             // TODO
@@ -104,7 +128,10 @@ public class Parser {
 
     public static void Variable_list_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.COMMA) {
-            Match(TokenCode.COMMA);
+            if(!Match(TokenCode.COMMA)){
+                Sync("variable_list'");
+                return;
+            }
             Variable();
             Variable_list_prime();
         }
@@ -112,15 +139,27 @@ public class Parser {
     }
 
     public static void Variable() throws IOException {
-        Match(TokenCode.IDENTIFIER);
+        if (!Match(TokenCode.IDENTIFIER)){
+            Sync("variable");
+            return;
+        }
         Variable_prime();
     }
 
     public static void Variable_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.LBRACKET) {
-            Match(TokenCode.LBRACKET);
-            Match(TokenCode.NUMBER);
-            Match(TokenCode.RBRACKET);
+            if(!Match(TokenCode.LBRACKET)){
+                Sync("variable'");
+                return;
+            }
+            if(!Match(TokenCode.NUMBER)){
+                Sync("variable'");
+                return;
+            }
+            if(!Match(TokenCode.RBRACKET)){
+                Sync("variable'");
+                return;
+            }
         }
         // epsilon
     }
@@ -140,21 +179,42 @@ public class Parser {
     }
 
     public static void Method_declaration() throws IOException {
-        Match(TokenCode.STATIC);
+        if(!Match(TokenCode.STATIC)){
+            Sync("method_declaration");
+            return;
+        }
         Method_return_type();
-        Match(TokenCode.IDENTIFIER);
-        Match(TokenCode.LPAREN);
+        if(!Match(TokenCode.IDENTIFIER)){
+            Sync("method_declaration");
+            return;
+        }
+        if(!Match(TokenCode.LPAREN)){
+            Sync("method_declaration");
+            return;
+        }
         Parameters();
-        Match(TokenCode.RPAREN);
-        Match(TokenCode.LBRACE);
+        if(!Match(TokenCode.RPAREN)){
+            Sync("method_declaration");
+            return;
+        }
+        if(!Match(TokenCode.LBRACE)){
+            Sync("method_declaration");
+            return;
+        }
         Variable_declarations();
         Statement_list();
-        Match(TokenCode.RBRACE);
+        if(!Match(TokenCode.RBRACE)){
+            Sync("method_declaration");
+            return;
+        }
     }
 
     public static void Method_return_type() throws IOException {
         if (token.getTokenCode() == TokenCode.VOID) {
-            Match(TokenCode.VOID);
+            if(!Match(TokenCode.VOID)){
+                Sync("method_return_type");
+                return;
+            }
         }
         else {
             Type();
@@ -171,15 +231,24 @@ public class Parser {
 
     public static void Parameter_list() throws IOException {
         Type();
-        Match(TokenCode.IDENTIFIER);
+        if (!Match(TokenCode.IDENTIFIER)){
+            Sync("parameter_list");
+            return;
+        }
         Parameter_list_prime();
     }
 
     public static void Parameter_list_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.COMMA) {
-            Match(TokenCode.COMMA);
+            if(!Match(TokenCode.COMMA)){
+                Sync("parameter_list'");
+                return;
+            }
             Type();
-            Match(TokenCode.IDENTIFIER);
+            if (!Match(TokenCode.IDENTIFIER)){
+                Sync("parameter_list'");
+                return;
+            }
             Parameter_list_prime();
         }
         // epsilon
@@ -202,14 +271,26 @@ public class Parser {
 
     public static void Statement() throws IOException {
         if (token.getTokenCode() == TokenCode.IDENTIFIER) {
-            Match(TokenCode.IDENTIFIER);
+            if(!Match(TokenCode.IDENTIFIER)) {
+                Sync("statement");
+                return;
+            }
             Statement_prime();
         }
         else if (token.getTokenCode() == TokenCode.IF) {
-            Match(TokenCode.IF);
-            Match(TokenCode.LPAREN);
+            if(!Match(TokenCode.IF)){
+                Sync("statement");
+                return;
+            }
+            if(!Match(TokenCode.LPAREN)){
+                Sync("statement");
+                return;
+            }
             Expression();
-            Match(TokenCode.RPAREN);
+            if(!Match(TokenCode.RPAREN)){
+                Sync("statement");
+                return;
+            }
             Statement_block();
             Optional_else();
         }
@@ -246,10 +327,19 @@ public class Parser {
 
     public static void Statement_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.LPAREN) {
-            Match(TokenCode.LPAREN);
+            if(!Match(TokenCode.LPAREN)) {
+                Sync("statement'");
+                return;
+            }
             Expression_list();
-            Match(TokenCode.RPAREN);
-            Match(TokenCode.SEMICOLON);
+            if(!Match(TokenCode.RPAREN)) {
+                Sync("statement'");
+                return;
+            }
+            if(!Match(TokenCode.SEMICOLON)) {
+                Sync("statement'");
+                return;
+            }
         }
         else {
             Variable_loc_prime();
@@ -259,13 +349,25 @@ public class Parser {
 
     public static void Statement_prime_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.ASSIGNOP) {
-            Match(TokenCode.ASSIGNOP);
+            if(!Match(TokenCode.ASSIGNOP)) {
+                Sync("statement''");
+                return;
+            }
             Expression();
-            Match(TokenCode.SEMICOLON);
+            if(!Match(TokenCode.SEMICOLON)) {
+                Sync("statement''");
+                return;
+            }
         }
         else if (token.getTokenCode() == TokenCode.INCDECOP) {
-            Match(TokenCode.INCDECOP);
-            Match(TokenCode.SEMICOLON);
+            if(!Match(TokenCode.INCDECOP)){
+                Sync("statement''");
+                return;
+            }
+            if(!Match(TokenCode.SEMICOLON)){
+                Sync("statement''");
+                return;
+            }
         }
         else {
             System.out.println("Statement_prime_prime - token.getTokenCode() == TokenCode.INCDECOP || token.getTokenCode() == TokenCode.ASSIGNOP");
@@ -288,19 +390,31 @@ public class Parser {
     }
 
     public static void Statement_block() throws IOException {
-        Match(TokenCode.LBRACE);
+        if(!Match(TokenCode.LBRACE)) {
+            Sync("statement_block");
+            return;
+        }
         Statement_list();
-        Match(TokenCode.RBRACE);
+        if(!Match(TokenCode.RBRACE)) {
+            Sync("statement_block");
+            return;
+        }
     }
 
     public static void Incr_decr_var() throws IOException {
         Variable_loc();
-        Match(TokenCode.INCDECOP);
+        if(!Match(TokenCode.INCDECOP)){
+            Sync("incr_decr_var");
+            return;
+        }
     }
 
     public static void Optional_else() throws IOException {
         if (token.getTokenCode() == TokenCode.ELSE) {
-            Match(TokenCode.ELSE);
+            if(!Match(TokenCode.ELSE)){
+                    Sync("optional_else");
+                    return;
+            }
             Statement_block();
         }
         // epsilon
@@ -375,7 +489,10 @@ public class Parser {
 
     public static void Simple_expression_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.ADDOP) {
-            Match(TokenCode.ADDOP);
+            if(!Match(TokenCode.ADDOP)){
+                Sync("simple_expression'");
+                return;
+            }
             Term();
             Simple_expression_prime();
         }
@@ -389,7 +506,10 @@ public class Parser {
 
     public static void Term_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.MULOP) {
-            Match(TokenCode.MULOP);
+            if(Match(TokenCode.MULOP)){
+                Sync("term'");
+                return;
+            }
             Factor();
             //token = lexer.yylex();
             Term_prime();
@@ -399,19 +519,36 @@ public class Parser {
 
     public static void Factor() throws IOException {
         if (token.getTokenCode() == TokenCode.IDENTIFIER) {
-            Match(TokenCode.IDENTIFIER);
+            if(!Match(TokenCode.IDENTIFIER)){
+                if(!Match(TokenCode.LPAREN)){
+                    Sync("factor");
+                    return;
+                }
+            }
             Factor_prime();
         }
         else if (token.getTokenCode() == TokenCode.NUMBER) {
-            Match(TokenCode.NUMBER);
+            if(!Match(TokenCode.NUMBER)){
+                Sync("factor");
+                return;
+            }
         }
         else if (token.getTokenCode() == TokenCode.LPAREN) {
-            Match(TokenCode.LPAREN);
+            if(!Match(TokenCode.LPAREN)){
+                Sync("factor");
+                return;
+            }
             Expression();
-            Match(TokenCode.RPAREN);
+            if(!Match(TokenCode.RPAREN)){
+                Sync("factor");
+                return;
+            }
         }
         else if (token.getTokenCode() == TokenCode.NOT) {
-            Match(TokenCode.NOT);
+            if(!Match(TokenCode.NOT)){
+                Sync("factor");
+                return;
+            }
             Factor();
         }
         else {
@@ -421,9 +558,15 @@ public class Parser {
 
     public static void Factor_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.LPAREN) {
-            Match(TokenCode.LPAREN);
+            if(!Match(TokenCode.LPAREN)){
+                Sync("factor'");
+                return;
+            }
             Expression_list();
-            Match(TokenCode.RPAREN);
+            if(!Match(TokenCode.RPAREN)){
+                Sync("factor'");
+                return;
+            }
         }
         else {
             Variable_loc_prime();
@@ -431,15 +574,24 @@ public class Parser {
     }
 
     public static void Variable_loc() throws IOException {
-        Match(TokenCode.IDENTIFIER);
+        if(!Match(TokenCode.IDENTIFIER)){
+            Sync("variable_loc");
+            return;
+        }
         Variable_loc_prime();
     }
 
     public static void Variable_loc_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.LBRACKET) {
-            Match(TokenCode.LBRACKET);
+            if(!Match(TokenCode.LBRACKET)){
+                Sync("variable_loc'");
+                return;
+            }
             Expression();
-            Match(TokenCode.RBRACKET);
+            if(!Match(TokenCode.RBRACKET)){
+                Sync("variable_loc'");
+                return;
+            }
         }
         // epsilon
     }
@@ -488,7 +640,7 @@ public class Parser {
         return true;
     }
 
-    private static void Sync(String nonTerminal){
+    private static void Sync(String nonTerminal) throws IOException {
         while (token.getTokenCode() != TokenCode.EOF) {
             token = lexer.yylex();
             if (syncSets.get(nonTerminal).contains(token.getTokenCode())) {
