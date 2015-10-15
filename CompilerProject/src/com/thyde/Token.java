@@ -7,8 +7,9 @@ public class Token {
     private SymbolTableEntry _symbolTableEntry;
     private int _lineNumber;
     private int _column;
+    private String _tokenText;
 
-    public Token(TokenCode tc, DataType dt, OpType ot, SymbolTableEntry ste, int lineNumber, int column)
+    public Token(TokenCode tc, DataType dt, OpType ot, SymbolTableEntry ste, int lineNumber, int column, String tokenText)
     {
         _tokenCode        = tc;
         _dataType         = dt;
@@ -16,6 +17,7 @@ public class Token {
         _symbolTableEntry = ste;
         _lineNumber       = lineNumber;
         _column           = column;
+        _tokenText        = tokenText;
     }
 
     public TokenCode getTokenCode()
@@ -46,4 +48,6 @@ public class Token {
     public int getColumn(){
         return _column;
     }
+
+    public String getTokenText(){return _tokenText;}
 }
