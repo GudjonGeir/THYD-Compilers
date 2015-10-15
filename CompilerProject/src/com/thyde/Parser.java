@@ -22,7 +22,7 @@ public class Parser {
         token = lexer.yylex();
         codeLines = makeCodeLines(filePath);
 
-
+        syncSets = new HashMap<String, List<TokenCode>>();
         syncSets.put("program", Arrays.asList(TokenCode.EOF));
         syncSets.put("variable_declarations", Arrays.asList(TokenCode.IDENTIFIER, TokenCode.IF, TokenCode.FOR, TokenCode.RETURN, TokenCode.BREAK, TokenCode.CONTINUE, TokenCode.LBRACE, TokenCode.STATIC));
         syncSets.put("type", Arrays.asList(TokenCode.IDENTIFIER));
@@ -647,6 +647,7 @@ public class Parser {
                 return;
             }
         }
+        System.exit(-1);
     }
 
     public static String[] makeCodeLines(String filePath){
