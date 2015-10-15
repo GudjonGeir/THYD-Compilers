@@ -8,7 +8,8 @@ import java.io.IOException;
 
 public class Parser {
     private static Lexer lexer;
-    private static Token token;
+    private static Token currentToken;
+    private static Token prevToken;
     private static String[] codeLines;
     private static HashMap<String, List<TokenCode>> syncSets;
     private static int errorCounter;
@@ -22,10 +23,11 @@ public class Parser {
     // Comment helper functions
     // Change public functions to private
     // use prevToken to point to missing semicolon
+    // Unexpected eof
 
     public static void Parse(String filePath) throws IOException {
         lexer = new Lexer(new FileReader(filePath));
-        token = lexer.yylex();
+        currentToken = lexer.yylex();
         codeLines = makeCodeLines(filePath);
         errorCounter = 0;
 
@@ -79,7 +81,7 @@ public class Parser {
         }
     }
 
-    public static void Program() throws IOException {
+    private static void Program() throws IOException {
         if(!Match(TokenCode.CLASS)) {
             Sync("program");
             return;
@@ -100,9 +102,9 @@ public class Parser {
         }
     }
 
-    public static void Variable_declarations() throws IOException {
+    private static void Variable_declarations() throws IOException {
         // Peeking because Type starts with INT or REAL
-        if (token.getTokenCode() == TokenCode.INT || token.getTokenCode() == TokenCode.REAL) {
+        if (currentToken.getTokenCode() == TokenCode.INT || currentToken.getTokenCode() == TokenCode.REAL) {
             Type();
             Variable_list();
             if(!Match(TokenCode.SEMICOLON)) {
@@ -114,11 +116,11 @@ public class Parser {
         // epsilon
     }
 
-    public static void Type() throws IOException {
-        if (token.getTokenCode() == TokenCode.INT) {
+    private static void Type() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.INT) {
             Match(TokenCode.INT);
         }
-        else if (token.getTokenCode() == TokenCode.REAL) {
+        else if (currentToken.getTokenCode() == TokenCode.REAL) {
             Match(TokenCode.REAL);
         }
         else {
@@ -127,13 +129,13 @@ public class Parser {
         }
     }
 
-    public static void Variable_list() throws IOException {
+    private static void Variable_list() throws IOException {
         Variable();
         Variable_list_prime();
     }
 
-    public static void Variable_list_prime() throws IOException {
-        if (token.getTokenCode() == TokenCode.COMMA) {
+    private static void Variable_list_prime() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.COMMA) {
             if(!Match(TokenCode.COMMA)){
                 Sync("variable_list'");
                 return;
@@ -144,7 +146,7 @@ public class Parser {
         // epsilon
     }
 
-    public static void Variable() throws IOException {
+    private static void Variable() throws IOException {
         if (!Match(TokenCode.IDENTIFIER)){
             Sync("variable");
             return;
@@ -152,8 +154,8 @@ public class Parser {
         Variable_prime();
     }
 
-    public static void Variable_prime() throws IOException {
-        if (token.getTokenCode() == TokenCode.LBRACKET) {
+    private static void Variable_prime() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.LBRACKET) {
             if(!Match(TokenCode.LBRACKET)){
                 Sync("variable'");
                 return;
@@ -170,21 +172,21 @@ public class Parser {
         // epsilon
     }
 
-    public static void Method_declarations() throws IOException {
+    private static void Method_declarations() throws IOException {
         Method_declaration();
         More_method_declarations();
     }
 
-    public static void More_method_declarations() throws IOException {
+    private static void More_method_declarations() throws IOException {
         //FIRST(Method_declaration() = {STATIC}
-        if (token.getTokenCode() == TokenCode.STATIC){
+        if (currentToken.getTokenCode() == TokenCode.STATIC){
             Method_declaration();
             More_method_declarations();
         }
         // epsilon
     }
 
-    public static void Method_declaration() throws IOException {
+    private static void Method_declaration() throws IOException {
         if(!Match(TokenCode.STATIC)){
             Sync("method_declaration");
             return;
@@ -215,8 +217,8 @@ public class Parser {
         }
     }
 
-    public static void Method_return_type() throws IOException {
-        if (token.getTokenCode() == TokenCode.VOID) {
+    private static void Method_return_type() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.VOID) {
             if(!Match(TokenCode.VOID)){
                 Sync("method_return_type");
                 return;
@@ -227,15 +229,15 @@ public class Parser {
         }
     }
 
-    public static void  Parameters() throws IOException {
+    private static void  Parameters() throws IOException {
         // FIRST(Parameter_list()) = {INT, REAL}
-        if (token.getTokenCode() == TokenCode.INT || token.getTokenCode() == TokenCode.REAL) {
+        if (currentToken.getTokenCode() == TokenCode.INT || currentToken.getTokenCode() == TokenCode.REAL) {
             Parameter_list();
         }
         // epsilon
     }
 
-    public static void Parameter_list() throws IOException {
+    private static void Parameter_list() throws IOException {
         Type();
         if (!Match(TokenCode.IDENTIFIER)){
             Sync("parameter_list");
@@ -244,8 +246,8 @@ public class Parser {
         Parameter_list_prime();
     }
 
-    public static void Parameter_list_prime() throws IOException {
-        if (token.getTokenCode() == TokenCode.COMMA) {
+    private static void Parameter_list_prime() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.COMMA) {
             if(!Match(TokenCode.COMMA)){
                 Sync("parameter_list'");
                 return;
@@ -260,30 +262,30 @@ public class Parser {
         // epsilon
     }
 
-    public static void Statement_list() throws IOException {
+    private static void Statement_list() throws IOException {
         // FIRST(Statement()) = { IDENTIFIER, IF, FOR, RETURN, BREAK, CONTINUE, LBRACE }
-        if (token.getTokenCode() == TokenCode.IDENTIFIER
-                || token.getTokenCode() == TokenCode.IF
-                || token.getTokenCode() == TokenCode.FOR
-                || token.getTokenCode() == TokenCode.RETURN
-                || token.getTokenCode() == TokenCode.BREAK
-                || token.getTokenCode() == TokenCode.CONTINUE
-                || token.getTokenCode() == TokenCode.LBRACE) {
+        if (currentToken.getTokenCode() == TokenCode.IDENTIFIER
+                || currentToken.getTokenCode() == TokenCode.IF
+                || currentToken.getTokenCode() == TokenCode.FOR
+                || currentToken.getTokenCode() == TokenCode.RETURN
+                || currentToken.getTokenCode() == TokenCode.BREAK
+                || currentToken.getTokenCode() == TokenCode.CONTINUE
+                || currentToken.getTokenCode() == TokenCode.LBRACE) {
             Statement();
             Statement_list();
         }
         // epsilon
     }
 
-    public static void Statement() throws IOException {
-        if (token.getTokenCode() == TokenCode.IDENTIFIER) {
+    private static void Statement() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.IDENTIFIER) {
             if(!Match(TokenCode.IDENTIFIER)) {
                 Sync("statement");
                 return;
             }
             Statement_prime();
         }
-        else if (token.getTokenCode() == TokenCode.IF) {
+        else if (currentToken.getTokenCode() == TokenCode.IF) {
             if(!Match(TokenCode.IF)){
                 Sync("statement");
                 return;
@@ -300,7 +302,7 @@ public class Parser {
             Statement_block();
             Optional_else();
         }
-        else if (token.getTokenCode() == TokenCode.FOR) {
+        else if (currentToken.getTokenCode() == TokenCode.FOR) {
             if(!Match(TokenCode.FOR)) {
                 Sync("statement");
                 return;
@@ -331,7 +333,7 @@ public class Parser {
             }
             Statement_block();
         }
-        else if (token.getTokenCode() == TokenCode.RETURN) {
+        else if (currentToken.getTokenCode() == TokenCode.RETURN) {
             if(!Match(TokenCode.RETURN)) {
                 Sync("statement");
                 return;
@@ -342,7 +344,7 @@ public class Parser {
                 return;
             }
         }
-        else if (token.getTokenCode() == TokenCode.BREAK) {
+        else if (currentToken.getTokenCode() == TokenCode.BREAK) {
             if(!Match(TokenCode.BREAK)) {
                 Sync("statement");
                 return;
@@ -352,7 +354,7 @@ public class Parser {
                 return;
             }
         }
-        else if (token.getTokenCode() == TokenCode.CONTINUE) {
+        else if (currentToken.getTokenCode() == TokenCode.CONTINUE) {
             if(!Match(TokenCode.CONTINUE)) {
                 Sync("statement");
                 return;
@@ -367,8 +369,8 @@ public class Parser {
         }
     }
 
-    public static void Statement_prime() throws IOException {
-        if (token.getTokenCode() == TokenCode.LPAREN) {
+    private static void Statement_prime() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.LPAREN) {
             if(!Match(TokenCode.LPAREN)) {
                 Sync("statement'");
                 return;
@@ -389,8 +391,8 @@ public class Parser {
         }
     }
 
-    public static void Statement_prime_prime() throws IOException {
-        if (token.getTokenCode() == TokenCode.ASSIGNOP) {
+    private static void Statement_prime_prime() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.ASSIGNOP) {
             if(!Match(TokenCode.ASSIGNOP)) {
                 Sync("statement''");
                 return;
@@ -401,7 +403,7 @@ public class Parser {
                 return;
             }
         }
-        else if (token.getTokenCode() == TokenCode.INCDECOP) {
+        else if (currentToken.getTokenCode() == TokenCode.INCDECOP) {
             if(!Match(TokenCode.INCDECOP)){
                 Sync("statement''");
                 return;
@@ -417,21 +419,21 @@ public class Parser {
         }
     }
 
-    public static void Optional_expression() throws IOException {
+    private static void Optional_expression() throws IOException {
         // FIRST(Expression) = { IDENTIFIER, NUMBER, NOT, LPAREN, MINUS, PLUS }
-        if (token.getTokenCode() == TokenCode.IDENTIFIER
-                || token.getTokenCode() == TokenCode.NUMBER
-                || token.getTokenCode() == TokenCode.NOT
-                || token.getTokenCode() == TokenCode.LPAREN
-                || (token.getTokenCode() == TokenCode.ADDOP
-                    && (token.getOpType() == OpType.MINUS
-                        || token.getOpType() == OpType.PLUS))) {
+        if (currentToken.getTokenCode() == TokenCode.IDENTIFIER
+                || currentToken.getTokenCode() == TokenCode.NUMBER
+                || currentToken.getTokenCode() == TokenCode.NOT
+                || currentToken.getTokenCode() == TokenCode.LPAREN
+                || (currentToken.getTokenCode() == TokenCode.ADDOP
+                    && (currentToken.getOpType() == OpType.MINUS
+                        || currentToken.getOpType() == OpType.PLUS))) {
             Expression();
         }
         // epsilon
     }
 
-    public static void Statement_block() throws IOException {
+    private static void Statement_block() throws IOException {
         if(!Match(TokenCode.LBRACE)) {
             Sync("statement_block");
             return;
@@ -443,7 +445,7 @@ public class Parser {
         }
     }
 
-    public static void Incr_decr_var() throws IOException {
+    private static void Incr_decr_var() throws IOException {
         Variable_loc();
         if(!Match(TokenCode.INCDECOP)){
             Sync("incr_decr_var");
@@ -451,8 +453,8 @@ public class Parser {
         }
     }
 
-    public static void Optional_else() throws IOException {
-        if (token.getTokenCode() == TokenCode.ELSE) {
+    private static void Optional_else() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.ELSE) {
             if(!Match(TokenCode.ELSE)){
                     Sync("optional_else");
                     return;
@@ -462,64 +464,64 @@ public class Parser {
         // epsilon
     }
 
-    public static void Expression_list() throws IOException {
+    private static void Expression_list() throws IOException {
         // FIRST(Expression) = { IDENTIFIER, NUMBER, NOT, LPAREN, MINUS, PLUS }
-        if (token.getTokenCode() == TokenCode.IDENTIFIER
-                || token.getTokenCode() == TokenCode.NUMBER
-                || token.getTokenCode() == TokenCode.NOT
-                || token.getTokenCode() == TokenCode.LPAREN
-                || (token.getTokenCode() == TokenCode.ADDOP
-                    && (token.getOpType() == OpType.MINUS
-                        || token.getOpType() == OpType.PLUS))) {
+        if (currentToken.getTokenCode() == TokenCode.IDENTIFIER
+                || currentToken.getTokenCode() == TokenCode.NUMBER
+                || currentToken.getTokenCode() == TokenCode.NOT
+                || currentToken.getTokenCode() == TokenCode.LPAREN
+                || (currentToken.getTokenCode() == TokenCode.ADDOP
+                    && (currentToken.getOpType() == OpType.MINUS
+                        || currentToken.getOpType() == OpType.PLUS))) {
             Expression();
-            //token = lexer.yylex();
             More_expressions();
         }
         // epsilon
     }
 
-    public static void More_expressions() throws IOException {
-        if (token.getTokenCode() == TokenCode.COMMA) {
-            token = lexer.yylex();
+    private static void More_expressions() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.COMMA) {
+            if(!Match(TokenCode.COMMA)) {
+                Sync("more_expressions");
+                return;
+            }
             Expression();
-            //token = lexer.yylex();
             More_expressions();
         }
         // epsilon
     }
 
-    public static void Expression() throws IOException {
+    private static void Expression() throws IOException {
         Simple_expression();
-        //token = lexer.yylex();
         Expression_prime();
     }
 
-    public static void Expression_prime() throws IOException {
-        if (token.getTokenCode() == TokenCode.RELOP) {
-            token = lexer.yylex();
+    private static void Expression_prime() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.RELOP) {
+            if (!Match(TokenCode.RELOP)) {
+                Sync("expression'");
+                return;
+            }
             Simple_expression();
         }
         // epsilon
     }
 
-    public static void Simple_expression() throws IOException {
+    private static void Simple_expression() throws IOException {
         // FIRST(TERM) = { IDENTIFIER, NUMBER, NOT, LPAREN }
-        if (token.getTokenCode() == TokenCode.IDENTIFIER
-                || token.getTokenCode() == TokenCode.NUMBER
-                || token.getTokenCode() == TokenCode.NOT
-                || token.getTokenCode() == TokenCode.LPAREN) {
+        if (currentToken.getTokenCode() == TokenCode.IDENTIFIER
+                || currentToken.getTokenCode() == TokenCode.NUMBER
+                || currentToken.getTokenCode() == TokenCode.NOT
+                || currentToken.getTokenCode() == TokenCode.LPAREN) {
             Term();
-            //token = lexer.yylex();
             Simple_expression_prime();
         }
         // FIRST(Sign()) = { MINUS, PLUS }
-        else if (token.getTokenCode() == TokenCode.ADDOP
-                && (token.getOpType() == OpType.MINUS
-                || token.getOpType() == OpType.PLUS)) {
+        else if (currentToken.getTokenCode() == TokenCode.ADDOP
+                && (currentToken.getOpType() == OpType.MINUS
+                || currentToken.getOpType() == OpType.PLUS)) {
             Sign();
-            //token = lexer.yylex();
             Term();
-            //token = lexer.yylex();
             Simple_expression_prime();
         }
         else {
@@ -528,8 +530,8 @@ public class Parser {
         }
     }
 
-    public static void Simple_expression_prime() throws IOException {
-        if (token.getTokenCode() == TokenCode.ADDOP) {
+    private static void Simple_expression_prime() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.ADDOP) {
             if(!Match(TokenCode.ADDOP)){
                 Sync("simple_expression'");
                 return;
@@ -540,26 +542,26 @@ public class Parser {
         // epsilon
     }
 
-    public static void Term() throws IOException {
+    private static void Term() throws IOException {
         Factor();
         Term_prime();
     }
 
-    public static void Term_prime() throws IOException {
-        if (token.getTokenCode() == TokenCode.MULOP) {
+    private static void Term_prime() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.MULOP) {
             if(!Match(TokenCode.MULOP)){
                 Sync("term'");
                 return;
             }
             Factor();
-            //token = lexer.yylex();
+            //currentToken = lexer.yylex();
             Term_prime();
         }
         // epsilon
     }
 
-    public static void Factor() throws IOException {
-        if (token.getTokenCode() == TokenCode.IDENTIFIER) {
+    private static void Factor() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.IDENTIFIER) {
             if(!Match(TokenCode.IDENTIFIER)){
                 if(!Match(TokenCode.LPAREN)){
                     Sync("factor");
@@ -568,13 +570,13 @@ public class Parser {
             }
             Factor_prime();
         }
-        else if (token.getTokenCode() == TokenCode.NUMBER) {
+        else if (currentToken.getTokenCode() == TokenCode.NUMBER) {
             if(!Match(TokenCode.NUMBER)){
                 Sync("factor");
                 return;
             }
         }
-        else if (token.getTokenCode() == TokenCode.LPAREN) {
+        else if (currentToken.getTokenCode() == TokenCode.LPAREN) {
             if(!Match(TokenCode.LPAREN)){
                 Sync("factor");
                 return;
@@ -585,7 +587,7 @@ public class Parser {
                 return;
             }
         }
-        else if (token.getTokenCode() == TokenCode.NOT) {
+        else if (currentToken.getTokenCode() == TokenCode.NOT) {
             if(!Match(TokenCode.NOT)){
                 Sync("factor");
                 return;
@@ -597,8 +599,8 @@ public class Parser {
         }
     }
 
-    public static void Factor_prime() throws IOException {
-        if (token.getTokenCode() == TokenCode.LPAREN) {
+    private static void Factor_prime() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.LPAREN) {
             if(!Match(TokenCode.LPAREN)){
                 Sync("factor'");
                 return;
@@ -614,7 +616,7 @@ public class Parser {
         }
     }
 
-    public static void Variable_loc() throws IOException {
+    private static void Variable_loc() throws IOException {
         if(!Match(TokenCode.IDENTIFIER)){
             Sync("variable_loc");
             return;
@@ -622,8 +624,8 @@ public class Parser {
         Variable_loc_prime();
     }
 
-    public static void Variable_loc_prime() throws IOException {
-        if (token.getTokenCode() == TokenCode.LBRACKET) {
+    private static void Variable_loc_prime() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.LBRACKET) {
             if(!Match(TokenCode.LBRACKET)){
                 Sync("variable_loc'");
                 return;
@@ -637,78 +639,94 @@ public class Parser {
         // epsilon
     }
 
-    public static void Sign() throws IOException {
-        if (token.getTokenCode() == TokenCode.ADDOP) {
-            if (token.getOpType() == OpType.PLUS || token.getOpType() == OpType.MINUS) {
+    private static void Sign() throws IOException {
+        if (currentToken.getTokenCode() == TokenCode.ADDOP) {
+            if (currentToken.getOpType() == OpType.PLUS || currentToken.getOpType() == OpType.MINUS) {
                 if(!Match(TokenCode.ADDOP)) {
                     Sync("sign");
                     return;
                 }
             }
             else {
-                System.out.println("Sign - token.getTokenCode() == TokenCode.ADDOP || token.getOpType() == OpType.MINUS");
+                System.out.println("Sign - currentToken.getTokenCode() == TokenCode.ADDOP || currentToken.getOpType() == OpType.MINUS");
             }
         }
         else {
-            System.out.println("Sign - token.getTokenCode() == TokenCode.ADDOP");
+            System.out.println("Sign - currentToken.getTokenCode() == TokenCode.ADDOP");
         }
     }
 
     private static boolean Match(TokenCode tc) throws IOException {
-        if (token.getTokenCode() != tc) {
+        if (currentToken.getTokenCode() != tc) {
             PrintError(tc, "expected");
             return false;
         }
-
-        token = lexer.yylex();
-        if (token.getTokenCode() == TokenCode.ERR_ILL_CHAR) {
+        prevToken = currentToken;
+        currentToken = lexer.yylex();
+        if (currentToken.getTokenCode() == TokenCode.ERR_ILL_CHAR) {
             PrintError(null, "illegalChar");
             return false;
         }
-        else if (token.getTokenCode() == TokenCode.ERR_LONG_ID) {
+        else if (currentToken.getTokenCode() == TokenCode.ERR_LONG_ID) {
             PrintError(null, "longID");
             return false;
         }
+//        else if (currentToken.getTokenCode() == TokenCode.EOF && tc != TokenCode.EOF) {
+//            PrintError(null, "unexpectedEOF");
+//        }
         return true;
     }
 
     private static void PrintError(TokenCode expectedToken, String errorType) {
         errorCounter++;
 
-        String lineNumber = (token.getLineNumber() + 1) + " : ";
+        String errorMessage = "";
+        int lineNr = currentToken.getLineNumber();
+        int columnNr = currentToken.getColumn();
 
-        System.out.println(lineNumber + codeLines[token.getLineNumber()]);
-        for (int i = 0; i < lineNumber.length() + token.getColumn(); i++) {
+
+        if (errorType.equals("expected")) {
+            if (expectedToken == TokenCode.SEMICOLON) {
+                lineNr = prevToken.getLineNumber();
+                columnNr = prevToken.getColumn();
+            }
+             errorMessage = "Expected: " + expectedToken + ", got: " + currentToken.getTokenCode();
+        }
+        else if (errorType.equals("invalidStatement")) {
+            errorMessage = "Invalid statement";
+        }
+        else if (errorType.equals("invalidExpression")) {
+            errorMessage = "Invalid expression";
+        }
+        else if (errorType.equals("illegalChar")) {
+            errorMessage = "Illegal character";
+        }
+        else if (errorType.equals("longID")) {
+            errorMessage = "Identifier too long";
+        }
+        else if (errorType.equals("unexpectedEOF")) {
+            lineNr = prevToken.getLineNumber();
+            errorMessage = "Unexpected end of file";
+        }
+        String errorLine = (lineNr + 1) + " : ";
+
+        System.out.println(errorLine + codeLines[lineNr]);
+        for (int i = 0; i < errorLine.length() + columnNr; i++) {
             System.out.print(" ");
         }
-        if (errorType == "expected") {
-            System.out.println("^ Expected: " + expectedToken + ", got: " + token.getTokenCode());
-        }
-        else if (errorType == "invalidStatement") {
-            System.out.println("^ Invalid statement");
-        }
-        else if (errorType == "invalidExpression") {
-            System.out.println("^ Invalid expression");
-        }
-        else if (errorType == "illegalChar") {
-            System.out.println("^ Illegal character");
-        }
-        else if (errorType == "longID") {
-            System.out.println("^ Identifier too long");
-        }
+        System.out.println("^ " + errorMessage);
     }
 
     private static void Sync(String nonTerminal) throws IOException {
-        while (token.getTokenCode() != TokenCode.EOF) {
-            if (syncSets.get(nonTerminal).contains(token.getTokenCode())) {
+        while (currentToken.getTokenCode() != TokenCode.EOF) {
+            if (syncSets.get(nonTerminal).contains(currentToken.getTokenCode())) {
                 return;
             }
-            token = lexer.yylex();
+            currentToken = lexer.yylex();
         }
-        System.exit(-1);
     }
 
-    public static String[] makeCodeLines(String filePath){
+    private static String[] makeCodeLines(String filePath){
 
         String line;
 
