@@ -11,16 +11,23 @@ public class Parser {
     private static Token token;
     private static String[] codeLines;
     private static HashMap<String, List<TokenCode>> syncSets;
+    private static int errorCounter;
 
 
     public static void main(String[] args) throws IOException {
         Parse(args[0]);
     }
+    // TODO:
+    // Prettify error statements
+    // Comment helper functions
+    // Change public functions to private
+    // use prevToken to point to missing semicolon
 
     public static void Parse(String filePath) throws IOException {
         lexer = new Lexer(new FileReader(filePath));
         token = lexer.yylex();
         codeLines = makeCodeLines(filePath);
+        errorCounter = 0;
 
         syncSets = new HashMap<String, List<TokenCode>>();
         syncSets.put("program", Arrays.asList(TokenCode.EOF));
@@ -61,10 +68,15 @@ public class Parser {
 
         Program();
         if(!Match(TokenCode.EOF)){
-            //TODO
-            return;
+            PrintError(null, "End of class");
         }
-        System.out.println("No errors");
+
+        if (errorCounter == 0) {
+            System.out.println("No errors");
+        }
+        else {
+            System.out.println("Number of errors: " + errorCounter);
+        }
     }
 
     public static void Program() throws IOException {
@@ -82,10 +94,10 @@ public class Parser {
         }
         Variable_declarations();
         Method_declarations();
-       if(!Match(TokenCode.RBRACE)){
+        if(!Match(TokenCode.RBRACE)){
            Sync("program");
            return;
-       }
+        }
     }
 
     public static void Variable_declarations() throws IOException {
@@ -104,20 +116,14 @@ public class Parser {
 
     public static void Type() throws IOException {
         if (token.getTokenCode() == TokenCode.INT) {
-            if(!Match(TokenCode.INT)){
-                Sync("type");
-                return;
-            }
+            Match(TokenCode.INT);
         }
         else if (token.getTokenCode() == TokenCode.REAL) {
-            if(!Match(TokenCode.REAL)){
-                Sync("type");
-                return;
-            }
+            Match(TokenCode.REAL);
         }
         else {
-            // TODO
-            System.out.println("Type");
+            PrintError(TokenCode.INT, "expected");
+            Sync("type");
         }
     }
 
@@ -295,30 +301,66 @@ public class Parser {
             Optional_else();
         }
         else if (token.getTokenCode() == TokenCode.FOR) {
-            Match(TokenCode.FOR);
-            Match(TokenCode.LPAREN);
+            if(!Match(TokenCode.FOR)) {
+                Sync("statement");
+                return;
+            }
+            if(!Match(TokenCode.LPAREN)) {
+                Sync("statement");
+                return;
+            }
             Variable_loc();
-            Match(TokenCode.ASSIGNOP);
+            if(!Match(TokenCode.ASSIGNOP)) {
+                Sync("statement");
+                return;
+            }
             Expression();
-            Match(TokenCode.SEMICOLON);
+            if(!Match(TokenCode.SEMICOLON)) {
+                Sync("statement");
+                return;
+            }
             Expression();
-            Match(TokenCode.SEMICOLON);
+            if(!Match(TokenCode.SEMICOLON)) {
+                Sync("statement");
+                return;
+            }
             Incr_decr_var();
-            Match(TokenCode.RPAREN);
+            if(!Match(TokenCode.RPAREN)) {
+                Sync("statement");
+                return;
+            }
             Statement_block();
         }
         else if (token.getTokenCode() == TokenCode.RETURN) {
-            Match(TokenCode.RETURN);
+            if(!Match(TokenCode.RETURN)) {
+                Sync("statement");
+                return;
+            }
             Optional_expression();
-            Match(TokenCode.SEMICOLON);
+            if(!Match(TokenCode.SEMICOLON)) {
+                Sync("statement");
+                return;
+            }
         }
         else if (token.getTokenCode() == TokenCode.BREAK) {
-            Match(TokenCode.BREAK);
-            Match(TokenCode.SEMICOLON);
+            if(!Match(TokenCode.BREAK)) {
+                Sync("statement");
+                return;
+            }
+            if(!Match(TokenCode.SEMICOLON)) {
+                Sync("statement");
+                return;
+            }
         }
         else if (token.getTokenCode() == TokenCode.CONTINUE) {
-            Match(TokenCode.CONTINUE);
-            Match(TokenCode.SEMICOLON);
+            if(!Match(TokenCode.CONTINUE)) {
+                Sync("statement");
+                return;
+            }
+            if(!Match(TokenCode.SEMICOLON)) {
+                Sync("statement");
+                return;
+            }
         }
         else {
             Statement_block();
@@ -370,8 +412,8 @@ public class Parser {
             }
         }
         else {
-            System.out.println("Statement_prime_prime - token.getTokenCode() == TokenCode.INCDECOP || token.getTokenCode() == TokenCode.ASSIGNOP");
-            // TODO
+            PrintError(null, "invalidStatement");
+            Sync("statement''");
         }
     }
 
@@ -481,9 +523,8 @@ public class Parser {
             Simple_expression_prime();
         }
         else {
-            System.out.println("Simple_expression");
-
-            // TODO
+            PrintError(null, "invalidExpression");
+            Sync("simple_expression");
         }
     }
 
@@ -506,7 +547,7 @@ public class Parser {
 
     public static void Term_prime() throws IOException {
         if (token.getTokenCode() == TokenCode.MULOP) {
-            if(Match(TokenCode.MULOP)){
+            if(!Match(TokenCode.MULOP)){
                 Sync("term'");
                 return;
             }
@@ -605,47 +646,64 @@ public class Parser {
                 }
             }
             else {
-
                 System.out.println("Sign - token.getTokenCode() == TokenCode.ADDOP || token.getOpType() == OpType.MINUS");
-                // TODO
             }
         }
         else {
             System.out.println("Sign - token.getTokenCode() == TokenCode.ADDOP");
-
-            // TODO
         }
     }
 
     private static boolean Match(TokenCode tc) throws IOException {
         if (token.getTokenCode() != tc) {
-            String lineNumber = (token.getLineNumber() + 1) + " : ";
-
-            System.out.println(lineNumber + codeLines[token.getLineNumber()]);
-            for (int i = 0; i < lineNumber.length() + token.getColumn(); i++) {
-                System.out.print(" ");
-            }
-            System.out.println("^ Expected: " + tc + ", got: " + token.getTokenCode());
-//            System.out.println("Error: line number " + token.getLineNumber() + ", column " + token.getColumn());
-//            System.out.println("Expected: " + tc + ", got: " + token.getTokenCode());
+            PrintError(tc, "expected");
             return false;
         }
-        else if (token.getTokenCode() == TokenCode.ERR_ILL_CHAR) {
 
+        token = lexer.yylex();
+        if (token.getTokenCode() == TokenCode.ERR_ILL_CHAR) {
+            PrintError(null, "illegalChar");
+            return false;
         }
         else if (token.getTokenCode() == TokenCode.ERR_LONG_ID) {
-
+            PrintError(null, "longID");
+            return false;
         }
-        token = lexer.yylex();
         return true;
+    }
+
+    private static void PrintError(TokenCode expectedToken, String errorType) {
+        errorCounter++;
+
+        String lineNumber = (token.getLineNumber() + 1) + " : ";
+
+        System.out.println(lineNumber + codeLines[token.getLineNumber()]);
+        for (int i = 0; i < lineNumber.length() + token.getColumn(); i++) {
+            System.out.print(" ");
+        }
+        if (errorType == "expected") {
+            System.out.println("^ Expected: " + expectedToken + ", got: " + token.getTokenCode());
+        }
+        else if (errorType == "invalidStatement") {
+            System.out.println("^ Invalid statement");
+        }
+        else if (errorType == "invalidExpression") {
+            System.out.println("^ Invalid expression");
+        }
+        else if (errorType == "illegalChar") {
+            System.out.println("^ Illegal character");
+        }
+        else if (errorType == "longID") {
+            System.out.println("^ Identifier too long");
+        }
     }
 
     private static void Sync(String nonTerminal) throws IOException {
         while (token.getTokenCode() != TokenCode.EOF) {
-            token = lexer.yylex();
             if (syncSets.get(nonTerminal).contains(token.getTokenCode())) {
                 return;
             }
+            token = lexer.yylex();
         }
         System.exit(-1);
     }
