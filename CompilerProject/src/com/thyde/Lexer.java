@@ -713,13 +713,13 @@ class Lexer {
 
       if (zzInput == YYEOF && zzStartRead == zzCurrentPos) {
         zzAtEOF = true;
-          {     return new Token(TokenCode.EOF, DataType.NONE, OpType.NONE, null, yyline, yycolumn);
+          {     return new Token(TokenCode.EOF, DataType.NONE, OpType.NONE, null, yyline, yycolumn, yytext());
  }
       }
       else {
         switch (zzAction < 0 ? zzAction : ZZ_ACTION[zzAction]) {
           case 1: 
-            { return new Token(TokenCode.ERR_ILL_CHAR, DataType.NONE, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.ERR_ILL_CHAR, DataType.NONE, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 31: break;
           case 2: 
@@ -727,121 +727,121 @@ class Lexer {
             }
           case 32: break;
           case 3: 
-            { return new Token(TokenCode.MULOP, DataType.OP, GetOpType(yytext()), null, yyline, yycolumn);
+            { return new Token(TokenCode.MULOP, DataType.OP, GetOpType(yytext()), null, yyline, yycolumn, yytext());
             }
           case 33: break;
           case 4: 
             { if(yytext().length() > 32) {
-        return new Token(TokenCode.ERR_LONG_ID, DataType.NONE, OpType.NONE, null, yyline, yycolumn);
+        return new Token(TokenCode.ERR_LONG_ID, DataType.NONE, OpType.NONE, null, yyline, yycolumn, yytext());
        }
        SymbolTableEntry stEntry = SymbolTable.AddEntry(yytext());
-       return new Token(TokenCode.IDENTIFIER, DataType.ID, OpType.NONE, stEntry, yyline, yycolumn);
+       return new Token(TokenCode.IDENTIFIER, DataType.ID, OpType.NONE, stEntry, yyline, yycolumn, yytext());
             }
           case 34: break;
           case 5: 
             { SymbolTableEntry stEntry = SymbolTable.AddEntry(yytext());
-           return new Token(TokenCode.NUMBER, DataType.INT, OpType.NONE, stEntry, yyline, yycolumn);
+           return new Token(TokenCode.NUMBER, DataType.INT, OpType.NONE, stEntry, yyline, yycolumn, yytext());
             }
           case 35: break;
           case 6: 
-            { return new Token(TokenCode.ADDOP, DataType.OP, GetOpType(yytext()), null, yyline, yycolumn);
+            { return new Token(TokenCode.ADDOP, DataType.OP, GetOpType(yytext()), null, yyline, yycolumn, yytext());
             }
           case 36: break;
           case 7: 
-            { return new Token(TokenCode.ASSIGNOP, DataType.OP, OpType.ASSIGN, null, yyline, yycolumn);
+            { return new Token(TokenCode.ASSIGNOP, DataType.OP, OpType.ASSIGN, null, yyline, yycolumn, yytext());
             }
           case 37: break;
           case 8: 
-            { return new Token(TokenCode.NOT, DataType.NONE, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.NOT, DataType.NONE, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 38: break;
           case 9: 
-            { return new Token(TokenCode.RELOP, DataType.OP, GetOpType(yytext()), null, yyline, yycolumn);
+            { return new Token(TokenCode.RELOP, DataType.OP, GetOpType(yytext()), null, yyline, yycolumn, yytext());
             }
           case 39: break;
           case 10: 
-            { return new Token(TokenCode.LPAREN, DataType.NONE, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.LPAREN, DataType.NONE, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 40: break;
           case 11: 
-            { return new Token(TokenCode.RPAREN, DataType.NONE, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.RPAREN, DataType.NONE, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 41: break;
           case 12: 
-            { return new Token(TokenCode.LBRACE, DataType.NONE, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.LBRACE, DataType.NONE, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 42: break;
           case 13: 
-            { return new Token(TokenCode.RBRACE, DataType.NONE, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.RBRACE, DataType.NONE, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 43: break;
           case 14: 
-            { return new Token(TokenCode.LBRACKET, DataType.NONE, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.LBRACKET, DataType.NONE, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 44: break;
           case 15: 
-            { return new Token(TokenCode.RBRACKET, DataType.NONE, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.RBRACKET, DataType.NONE, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 45: break;
           case 16: 
-            { return new Token(TokenCode.COMMA, DataType.NONE, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.COMMA, DataType.NONE, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 46: break;
           case 17: 
-            { return new Token(TokenCode.SEMICOLON, DataType.NONE, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.SEMICOLON, DataType.NONE, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 47: break;
           case 18: 
-            { return new Token(TokenCode.INCDECOP, DataType.OP, GetOpType(yytext()), null, yyline, yycolumn);
+            { return new Token(TokenCode.INCDECOP, DataType.OP, GetOpType(yytext()), null, yyline, yycolumn, yytext() );
             }
           case 48: break;
           case 19: 
-            { return new Token(TokenCode.IF, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.IF, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 49: break;
           case 20: 
             { SymbolTableEntry stEntry = SymbolTable.AddEntry(yytext());
-            return new Token(TokenCode.NUMBER, DataType.REAL, OpType.NONE, stEntry, yyline, yycolumn);
+            return new Token(TokenCode.NUMBER, DataType.REAL, OpType.NONE, stEntry, yyline, yycolumn, yytext());
             }
           case 50: break;
           case 21: 
-            { return new Token(TokenCode.INT, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.INT, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 51: break;
           case 22: 
-            { return new Token(TokenCode.FOR, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.FOR, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 52: break;
           case 23: 
-            { return new Token(TokenCode.VOID, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.VOID, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 53: break;
           case 24: 
-            { return new Token(TokenCode.REAL, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.REAL, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 54: break;
           case 25: 
-            { return new Token(TokenCode.ELSE, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.ELSE, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 55: break;
           case 26: 
-            { return new Token(TokenCode.CLASS, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.CLASS, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 56: break;
           case 27: 
-            { return new Token(TokenCode.BREAK, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.BREAK, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 57: break;
           case 28: 
-            { return new Token(TokenCode.STATIC, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.STATIC, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 58: break;
           case 29: 
-            { return new Token(TokenCode.RETURN, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.RETURN, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 59: break;
           case 30: 
-            { return new Token(TokenCode.CONTINUE, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn);
+            { return new Token(TokenCode.CONTINUE, DataType.KEYWORD, OpType.NONE, null, yyline, yycolumn, yytext());
             }
           case 60: break;
           default:
