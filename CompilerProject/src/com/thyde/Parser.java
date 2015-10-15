@@ -65,9 +65,7 @@ public class Parser {
         syncSets.put("sign", Arrays.asList(TokenCode.IDENTIFIER, TokenCode.NUMBER, TokenCode.LPAREN, TokenCode.NOT));
 
         Program();
-        if(!Match(TokenCode.EOF)){
-            PrintError(null, "End of class", null);
-        }
+        Match(TokenCode.EOF);
 
         if (errorCounter == 0) {
             System.out.println("No errors");
@@ -626,11 +624,11 @@ public class Parser {
                 }
             }
             else {
-                System.out.println("Sign - currentToken.getTokenCode() == TokenCode.ADDOP || currentToken.getOpType() == OpType.MINUS");
+                // This never happens
             }
         }
         else {
-            System.out.println("Sign - currentToken.getTokenCode() == TokenCode.ADDOP");
+            // This never happens
         }
     }
 
@@ -640,6 +638,10 @@ public class Parser {
                 PrintError(null, "longID", null);
                 return false;
             }
+            else if (currentToken.getTokenCode() == TokenCode.EOF) {
+                PrintError(null, "unexpectedEOF", null);
+                return false;
+            }
             PrintError(tc, "expected", ConvertTokenCodeToString(tc));
             return false;
         }
@@ -647,10 +649,6 @@ public class Parser {
         currentToken = lexer.yylex();
         if (currentToken.getTokenCode() == TokenCode.ERR_ILL_CHAR) {
             PrintError(null, "illegalChar", null);
-            return false;
-        }
-        else if (currentToken.getTokenCode() == TokenCode.EOF && tc != TokenCode.EOF) {
-            PrintError(null, "unexpectedEOF", null);
             return false;
         }
         return true;
@@ -689,6 +687,9 @@ public class Parser {
         }
         else if (errorType.equals("longID")) {
             errorMessage = "Identifier too long";
+        }
+        else if (errorType.equals("endofclass")) {
+            errorMessage = "End of class";
         }
         else if (errorType.equals("unexpectedEOF")) {
             lineNr = prevToken.getLineNumber();
@@ -778,6 +779,9 @@ public class Parser {
         }
         else if (tc == TokenCode.INT || tc == TokenCode.REAL) {
             return "a type";
+        }
+        else if (tc == TokenCode.EOF) {
+            return "end of file";
         }
         return "";
     }
