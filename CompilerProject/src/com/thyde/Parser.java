@@ -1,5 +1,6 @@
 package com.thyde;
 
+import javax.swing.plaf.nimbus.State;
 import java.io.FileNotFoundException;
 import java.util.*;
 import java.io.File;
@@ -10,735 +11,553 @@ public class Parser {
     private static Lexer lexer;
     private static Token currentToken;
     private static Token prevToken;
-    private static String[] codeLines;
-    // Hash map with the name of the nonterminal as key and a list of TokenCodes as value
-    private static HashMap<String, List<TokenCode>> syncSets;
-    private static int errorCounter;
-    // Handles the case where eof has been reached so we don't get
-    // the same error more than once
-    private static boolean eofReached;
+    private static ErrorHandler errorHandler;
+    protected static final boolean TRACE = false;
 
 
-    public static void main(String[] args) throws IOException {
+
+    public static void main(String[] args) throws IOException{
         Parse(args[0]);
     }
 
 
-    public static void Parse(String filePath) throws IOException {
+    public static void Parse(String filePath) throws IOException{
         lexer = new Lexer(new FileReader(filePath));
+        errorHandler = new ErrorHandler(lexer, filePath);
         currentToken = lexer.yylex();
-        codeLines = MakeCodeLines(filePath);
-        errorCounter = 0;
-        eofReached = false;
-
-        syncSets = new HashMap<String, List<TokenCode>>();
-        syncSets.put("program", Arrays.asList(TokenCode.EOF));
-        syncSets.put("variable_declarations", Arrays.asList(TokenCode.IDENTIFIER, TokenCode.IF, TokenCode.FOR, TokenCode.RETURN, TokenCode.BREAK, TokenCode.CONTINUE, TokenCode.LBRACE, TokenCode.STATIC));
-        syncSets.put("type", Arrays.asList(TokenCode.IDENTIFIER));
-        syncSets.put("variable_list", Arrays.asList(TokenCode.SEMICOLON));
-        syncSets.put("variable_list'", Arrays.asList(TokenCode.SEMICOLON));
-        syncSets.put("variable", Arrays.asList(TokenCode.COMMA, TokenCode.SEMICOLON));
-        syncSets.put("variable'", Arrays.asList(TokenCode.COMMA, TokenCode.SEMICOLON));
-        syncSets.put("method_declarations", Arrays.asList(TokenCode.RBRACE));
-        syncSets.put("more_method_declarations", Arrays.asList(TokenCode.RBRACE));
-        syncSets.put("method_declaration", Arrays.asList(TokenCode.STATIC, TokenCode.RBRACE));
-        syncSets.put("method_return_type", Arrays.asList(TokenCode.IDENTIFIER));
-        syncSets.put("parameters", Arrays.asList(TokenCode.RPAREN));
-        syncSets.put("parameter_list", Arrays.asList(TokenCode.RPAREN));
-        syncSets.put("parameter_list'", Arrays.asList(TokenCode.RPAREN));
-        syncSets.put("statement_list", Arrays.asList(TokenCode.RBRACE));
-        syncSets.put("statement", Arrays.asList(TokenCode.IDENTIFIER, TokenCode.IF, TokenCode.FOR, TokenCode.RETURN, TokenCode.BREAK, TokenCode.CONTINUE, TokenCode.LBRACE, TokenCode.RBRACE));
-        syncSets.put("statement'", Arrays.asList(TokenCode.IDENTIFIER, TokenCode.IF, TokenCode.FOR, TokenCode.RETURN, TokenCode.BREAK, TokenCode.CONTINUE, TokenCode.LBRACE, TokenCode.RBRACE));
-        syncSets.put("statement''", Arrays.asList(TokenCode.IDENTIFIER, TokenCode.IF, TokenCode.FOR, TokenCode.RETURN, TokenCode.BREAK, TokenCode.CONTINUE, TokenCode.LBRACE, TokenCode.RBRACE));
-        syncSets.put("optional_expression", Arrays.asList(TokenCode.SEMICOLON));
-        syncSets.put("statement_block", Arrays.asList(TokenCode.ELSE, TokenCode.IDENTIFIER, TokenCode.IF, TokenCode.FOR, TokenCode.RETURN, TokenCode.BREAK, TokenCode.CONTINUE, TokenCode.LBRACE, TokenCode.RBRACE));
-        syncSets.put("incr_decr_var", Arrays.asList(TokenCode.RPAREN));
-        syncSets.put("optional_else", Arrays.asList(TokenCode.IDENTIFIER, TokenCode.IF, TokenCode.FOR, TokenCode.RETURN, TokenCode.BREAK, TokenCode.CONTINUE, TokenCode.LBRACE, TokenCode.RBRACE));
-        syncSets.put("expression_list", Arrays.asList(TokenCode.RPAREN));
-        syncSets.put("more_expressions", Arrays.asList(TokenCode.RPAREN));
-        syncSets.put("expression", Arrays.asList(TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
-        syncSets.put("expression'", Arrays.asList(TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
-        syncSets.put("simple_expression", Arrays.asList(TokenCode.RELOP, TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
-        syncSets.put("simple_expression'", Arrays.asList(TokenCode.RELOP, TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
-        syncSets.put("term", Arrays.asList(TokenCode.ADDOP, TokenCode.RELOP, TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
-        syncSets.put("term'", Arrays.asList(TokenCode.ADDOP, TokenCode.RELOP, TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
-        syncSets.put("factor", Arrays.asList(TokenCode.MULOP, TokenCode.ADDOP, TokenCode.RELOP, TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
-        syncSets.put("factor'", Arrays.asList(TokenCode.MULOP, TokenCode.ADDOP, TokenCode.RELOP, TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
-        syncSets.put("variable_loc", Arrays.asList(TokenCode.INCDECOP, TokenCode.ASSIGNOP));
-        syncSets.put("variable_loc'", Arrays.asList(TokenCode.ASSIGNOP, TokenCode.INCDECOP, TokenCode.MULOP, TokenCode.ADDOP, TokenCode.RELOP, TokenCode.RBRACKET, TokenCode.RPAREN, TokenCode.COMMA, TokenCode.SEMICOLON));
-        syncSets.put("sign", Arrays.asList(TokenCode.IDENTIFIER, TokenCode.NUMBER, TokenCode.LPAREN, TokenCode.NOT));
 
         Program();
-        Match(TokenCode.EOF);
+        match(TokenCode.EOF);
 
-        if (errorCounter == 0) {
+        if (errorHandler.m_errorCount == 0) {
             System.out.println("No errors");
         }
         else {
-            System.out.println("Number of errors: " + errorCounter);
+            System.out.println("Number of errors: " + errorHandler.m_errorCount);
         }
     }
 
-    private static void Program() throws IOException {
-        if(!Match(TokenCode.CLASS)) {
-            Sync("program");
-            return;
-        }
-        if(!Match(TokenCode.IDENTIFIER)){
-            Sync("program");
-            return;
-        }
-        if(!Match(TokenCode.LBRACE)){
-            Sync("program");
-            return;
-        }
+    private static void Program() {
+        errorHandler.startNonT(NonT.PROGRAM);
+        match(TokenCode.CLASS);
+        match(TokenCode.IDENTIFIER);
+        match(TokenCode.LBRACE);
         Variable_declarations();
         Method_declarations();
-        if(!Match(TokenCode.RBRACE)){
-           Sync("program");
-        }
+        match(TokenCode.RBRACE);
+        errorHandler.stopNonT();
     }
 
-    private static void Variable_declarations() throws IOException {
+    private static void Variable_declarations() {
+        errorHandler.startNonT(NonT.VARIABLE_DECLARATIONS);
         // Peeking because Type starts with INT or REAL
-        if (currentToken.getTokenCode() == TokenCode.INT || currentToken.getTokenCode() == TokenCode.REAL) {
+        if (lookaheadIn(NonT.firstOf(NonT.TYPE))) {
             Type();
             Variable_list();
-            if(!Match(TokenCode.SEMICOLON)) {
-                Sync("variable_declarations");
-                return;
-            }
+            match(TokenCode.SEMICOLON);
             Variable_declarations();
         }
         // epsilon
+        errorHandler.stopNonT();
     }
 
-    private static void Type() throws IOException {
+    private static void Type() {
+        errorHandler.startNonT(NonT.TYPE);
         if (currentToken.getTokenCode() == TokenCode.INT) {
-            Match(TokenCode.INT);
+            match(TokenCode.INT);
         }
         else if (currentToken.getTokenCode() == TokenCode.REAL) {
-            Match(TokenCode.REAL);
+            match(TokenCode.REAL);
         }
         else {
-            PrintError(null, "expected", "a type");
-            Sync("type");
+            noMatch(); // TODO: expected a type
         }
+        errorHandler.stopNonT();
     }
 
-    private static void Variable_list() throws IOException {
+    private static void Variable_list() {
+        errorHandler.startNonT(NonT.VARIABLE_LIST);
         Variable();
         Variable_list_prime();
+        errorHandler.stopNonT();
     }
 
-    private static void Variable_list_prime() throws IOException {
-        if (currentToken.getTokenCode() == TokenCode.COMMA) {
-            if(!Match(TokenCode.COMMA)){
-                Sync("variable_list'");
-                return;
-            }
+    private static void Variable_list_prime() {
+        errorHandler.startNonT(NonT.VARIABLE_LIST_2);
+        if (lookaheadIs(TokenCode.COMMA)) {
+            match(TokenCode.COMMA);
             Variable();
             Variable_list_prime();
         }
         // epsilon
+        errorHandler.stopNonT();
     }
 
-    private static void Variable() throws IOException {
-        if (!Match(TokenCode.IDENTIFIER)){
-            Sync("variable");
-            return;
+    private static void Variable() {
+        errorHandler.startNonT(NonT.VARIABLE);
+        match(TokenCode.IDENTIFIER);
+        if (lookaheadIs(TokenCode.LBRACKET)) {
+            match(TokenCode.LBRACKET);
+            match(TokenCode.NUMBER);
+            match(TokenCode.RBRACKET);
         }
-        Variable_prime();
+        errorHandler.stopNonT();
     }
 
-    private static void Variable_prime() throws IOException {
-        if (currentToken.getTokenCode() == TokenCode.LBRACKET) {
-            if(!Match(TokenCode.LBRACKET)){
-                Sync("variable'");
-                return;
-            }
-            if(!Match(TokenCode.NUMBER)){
-                Sync("variable'");
-                return;
-            }
-            if(!Match(TokenCode.RBRACKET)){
-                Sync("variable'");
-            }
-        }
-        // epsilon
-    }
 
-    private static void Method_declarations() throws IOException {
+    private static void Method_declarations() {
+        errorHandler.startNonT(NonT.METHOD_DECLARATIONS);
         Method_declaration();
         More_method_declarations();
+        errorHandler.stopNonT();
     }
 
-    private static void More_method_declarations() throws IOException {
+    private static void More_method_declarations() {
         //FIRST(Method_declaration() = {STATIC}
-        if (currentToken.getTokenCode() == TokenCode.STATIC){
+        errorHandler.startNonT(NonT.MORE_METHOD_DECLARATIONS);
+        if (lookaheadIn(NonT.firstOf(NonT.METHOD_DECLARATION))) {
             Method_declaration();
             More_method_declarations();
         }
         // epsilon
+        errorHandler.stopNonT();
     }
 
-    private static void Method_declaration() throws IOException {
-        if(!Match(TokenCode.STATIC)){
-            Sync("method_declaration");
-            return;
-        }
+    private static void Method_declaration() {
+        errorHandler.startNonT(NonT.METHOD_DECLARATION);
+        match(TokenCode.STATIC);
         Method_return_type();
-        if(!Match(TokenCode.IDENTIFIER)){
-            Sync("method_declaration");
-            return;
-        }
-        if(!Match(TokenCode.LPAREN)){
-            Sync("method_declaration");
-            return;
-        }
+        match(TokenCode.IDENTIFIER);
+        match(TokenCode.LPAREN);
         Parameters();
-        if(!Match(TokenCode.RPAREN)){
-            Sync("method_declaration");
-            return;
-        }
-        if(!Match(TokenCode.LBRACE)){
-            Sync("method_declaration");
-            return;
-        }
+        match(TokenCode.RPAREN);
+        match(TokenCode.LBRACE);
         Variable_declarations();
         Statement_list();
-        if(!Match(TokenCode.RBRACE)){
-            Sync("method_declaration");
-        }
+        match(TokenCode.RBRACE);
+        errorHandler.stopNonT();
     }
 
-    private static void Method_return_type() throws IOException {
-        if (currentToken.getTokenCode() == TokenCode.VOID) {
-            Match(TokenCode.VOID);
+    private static void Method_return_type() {
+        errorHandler.startNonT(NonT.METHOD_RETURN_TYPE);
+        if (lookaheadIs(TokenCode.VOID)) {
+            match(TokenCode.VOID);
         }
         else {
             Type();
         }
+        errorHandler.stopNonT();
     }
 
-    private static void  Parameters() throws IOException {
+    private static void  Parameters() {
+        errorHandler.startNonT(NonT.PARAMETERS);
         // FIRST(Parameter_list()) = {INT, REAL}
-        if (currentToken.getTokenCode() == TokenCode.INT || currentToken.getTokenCode() == TokenCode.REAL) {
+        if (lookaheadIn(NonT.firstOf(NonT.PARAMETER_LIST))) {
             Parameter_list();
         }
         // epsilon
+        errorHandler.stopNonT();
     }
 
-    private static void Parameter_list() throws IOException {
+    private static void Parameter_list() {
+        errorHandler.startNonT(NonT.PARAMETER_LIST);
         Type();
-        if (!Match(TokenCode.IDENTIFIER)){
-            Sync("parameter_list");
-            return;
-        }
+        match(TokenCode.IDENTIFIER);
         Parameter_list_prime();
+        errorHandler.stopNonT();
     }
 
-    private static void Parameter_list_prime() throws IOException {
-        if (currentToken.getTokenCode() == TokenCode.COMMA) {
-            if(!Match(TokenCode.COMMA)){
-                Sync("parameter_list'");
-                return;
-            }
+    private static void Parameter_list_prime() {
+        errorHandler.startNonT(NonT.PARAMETER_LIST2);
+        if (lookaheadIs(TokenCode.COMMA) && !errorHandler.inRecovery()) {
+            match(TokenCode.COMMA);
             Type();
-            if (!Match(TokenCode.IDENTIFIER)){
-                Sync("parameter_list'");
-                return;
-            }
+            match(TokenCode.IDENTIFIER);
             Parameter_list_prime();
         }
         // epsilon
+        errorHandler.stopNonT();
     }
 
-    private static void Statement_list() throws IOException {
+    private static void Statement_list() {
+        errorHandler.startNonT(NonT.STATEMENT_LIST);
         // FIRST(Statement()) = { IDENTIFIER, IF, FOR, RETURN, BREAK, CONTINUE, LBRACE }
-        if (currentToken.getTokenCode() == TokenCode.IDENTIFIER
-                || currentToken.getTokenCode() == TokenCode.IF
-                || currentToken.getTokenCode() == TokenCode.FOR
-                || currentToken.getTokenCode() == TokenCode.RETURN
-                || currentToken.getTokenCode() == TokenCode.BREAK
-                || currentToken.getTokenCode() == TokenCode.CONTINUE
-                || currentToken.getTokenCode() == TokenCode.LBRACE) {
+        if (lookaheadIn(NonT.firstOf(NonT.STATEMENT))	&& !errorHandler.inRecovery()) {
             Statement();
             Statement_list();
         }
+        errorHandler.stopNonT();
         // epsilon
     }
 
-    private static void Statement() throws IOException {
-        if (currentToken.getTokenCode() == TokenCode.IDENTIFIER) {
-            Match(TokenCode.IDENTIFIER);
+    private static void Statement() {
+        boolean noMatch = false;
+        errorHandler.startNonT(NonT.STATEMENT);
+        if (lookaheadIs(TokenCode.IDENTIFIER))
+        {
+            trace("idStartingStmt");
             Statement_prime();
         }
-        else if (currentToken.getTokenCode() == TokenCode.IF) {
-            Match(TokenCode.IF);
-            if(!Match(TokenCode.LPAREN)){
-                Sync("statement");
-                return;
-            }
+        else if (lookaheadIs(TokenCode.IF)) {
+            trace("if");
+            match(TokenCode.IF);
+            match(TokenCode.LPAREN);
             Expression();
-            if(!Match(TokenCode.RPAREN)){
-                Sync("statement");
-                return;
-            }
+            match(TokenCode.RPAREN);
             Statement_block();
             Optional_else();
         }
-        else if (currentToken.getTokenCode() == TokenCode.FOR) {
-            Match(TokenCode.FOR);
-            if(!Match(TokenCode.LPAREN)) {
-                Sync("statement");
-                return;
-            }
+        else if (lookaheadIs(TokenCode.FOR)) {
+            trace("for");
+            match(TokenCode.FOR);
+            match(TokenCode.LPAREN);
             Variable_loc();
-            if(!Match(TokenCode.ASSIGNOP)) {
-                Sync("statement");
-                return;
-            }
+            match(TokenCode.ASSIGNOP);
             Expression();
-            if(!Match(TokenCode.SEMICOLON)) {
-                Sync("statement");
-                return;
-            }
+            match(TokenCode.SEMICOLON);
             Expression();
-            if(!Match(TokenCode.SEMICOLON)) {
-                Sync("statement");
-                return;
-            }
-            Incr_decr_var();
-            if(!Match(TokenCode.RPAREN)) {
-                Sync("statement");
-                return;
-            }
+            match(TokenCode.SEMICOLON);
+            Variable_loc();
+            match(TokenCode.INCDECOP);
+            match(TokenCode.RPAREN);
             Statement_block();
         }
-        else if (currentToken.getTokenCode() == TokenCode.RETURN) {
-            Match(TokenCode.RETURN);
+        else if (lookaheadIs(TokenCode.RETURN)) {
+            trace("return");
+            match(TokenCode.RETURN);
             Optional_expression();
-            if(!Match(TokenCode.SEMICOLON)) {
-                Sync("statement");
-            }
+            match(TokenCode.SEMICOLON);
         }
-        else if (currentToken.getTokenCode() == TokenCode.BREAK) {
-            Match(TokenCode.BREAK);
-            if(!Match(TokenCode.SEMICOLON)) {
-                Sync("statement");
-            }
+        else if (lookaheadIs(TokenCode.BREAK)) {
+            trace("break");
+            match(TokenCode.BREAK);
+            match(TokenCode.SEMICOLON);
         }
-        else if (currentToken.getTokenCode() == TokenCode.CONTINUE) {
-            Match(TokenCode.CONTINUE);
-            if(!Match(TokenCode.SEMICOLON)) {
-                Sync("statement");
-            }
+        else if (lookaheadIs(TokenCode.CONTINUE)) {
+            trace("continue");
+            match(TokenCode.CONTINUE);
+            match(TokenCode.SEMICOLON);
+        }
+        else if (lookaheadIs(TokenCode.RBRACE)) {
+            trace("block");
+            Statement_block();
         }
         else {
-            Statement_block();
+            trace("noMatch");
+            noMatch = true;
+            errorHandler.stopNonT();
+            noMatch(); // TODO: invalid statement
+        }
+        if (!noMatch) {
+            errorHandler.stopNonT();
         }
     }
 
-    private static void Statement_prime() throws IOException {
-        if (currentToken.getTokenCode() == TokenCode.LPAREN) {
-            Match(TokenCode.LPAREN);
+    private static void Statement_prime() {
+        errorHandler.startNonT(NonT.STATEMENT2);
+        match(TokenCode.IDENTIFIER);
+        Statement_prime_prime();
+        match(TokenCode.SEMICOLON);
+        errorHandler.stopNonT();
+    }
+
+    private static void Statement_prime_prime() {
+        errorHandler.startNonT(NonT.STATEMENT3);
+        if (lookaheadIs(TokenCode.LPAREN)) {
+            match(TokenCode.LPAREN);
             Expression_list();
-            if(!Match(TokenCode.RPAREN)) {
-                Sync("statement'");
-                return;
-            }
-            if(!Match(TokenCode.SEMICOLON)) {
-                Sync("statement'");
-            }
+            match(TokenCode.RPAREN);
         }
-        else {
-            Variable_loc_prime();
-            Statement_prime_prime();
+        else if (lookaheadIs(TokenCode.INCDECOP)) {
+            match(TokenCode.INCDECOP);
         }
-    }
-
-    private static void Statement_prime_prime() throws IOException {
-        if (currentToken.getTokenCode() == TokenCode.ASSIGNOP) {
-            Match(TokenCode.ASSIGNOP);
+        else if (lookaheadIs(TokenCode.ASSIGNOP)) {
+            match(TokenCode.ASSIGNOP);
             Expression();
-            if(!Match(TokenCode.SEMICOLON)) {
-                Sync("statement''");
-            }
         }
-        else if (currentToken.getTokenCode() == TokenCode.INCDECOP) {
-            Match(TokenCode.INCDECOP);
-            if(!Match(TokenCode.SEMICOLON)){
-                Sync("statement''");
-            }
+        else if (lookaheadIs(TokenCode.LBRACKET)) {
+            match(TokenCode.LBRACKET);
+            Expression();
+            match(TokenCode.RBRACKET);
+            match(TokenCode.ASSIGNOP);
+            Expression();
         }
-        else {
-            PrintError(null, "invalidStatement", null);
-            Sync("statement''");
-        }
+        else // TODO: Add error context, i.e. idStartingStatement
+            noMatch();
+        errorHandler.stopNonT();
     }
 
-    private static void Optional_expression() throws IOException {
+    private static void Optional_expression() {
+        errorHandler.startNonT(NonT.OPTIONAL_EXPRESSION);
         // FIRST(Expression) = { IDENTIFIER, NUMBER, NOT, LPAREN, MINUS, PLUS }
-        if (currentToken.getTokenCode() == TokenCode.IDENTIFIER
-                || currentToken.getTokenCode() == TokenCode.NUMBER
-                || currentToken.getTokenCode() == TokenCode.NOT
-                || currentToken.getTokenCode() == TokenCode.LPAREN
-                || (currentToken.getTokenCode() == TokenCode.ADDOP
-                    && (currentToken.getOpType() == OpType.MINUS
-                        || currentToken.getOpType() == OpType.PLUS))) {
+        if (lookaheadIsFirstOfExpression()) {
             Expression();
         }
         // epsilon
+        errorHandler.stopNonT();
     }
 
-    private static void Statement_block() throws IOException {
-        if(!Match(TokenCode.LBRACE)) {
-            Sync("statement_block");
-            return;
-        }
+    private static void Statement_block() {
+        errorHandler.startNonT(NonT.STATEMENT_BLOCK);
+        match(TokenCode.LBRACE);
         Statement_list();
-        if(!Match(TokenCode.RBRACE)) {
-            Sync("statement_block");
-        }
+        match(TokenCode.RBRACE);
+        errorHandler.stopNonT();
     }
 
-    private static void Incr_decr_var() throws IOException {
-        Variable_loc();
-        if(!Match(TokenCode.INCDECOP)){
-            Sync("incr_decr_var");
-        }
-    }
-
-    private static void Optional_else() throws IOException {
-        if (currentToken.getTokenCode() == TokenCode.ELSE) {
-            Match(TokenCode.ELSE);
+    private static void Optional_else() {
+        errorHandler.startNonT(NonT.OPTIONAL_ELSE);
+        if (lookaheadIs(TokenCode.ELSE)) {
+            match(TokenCode.ELSE);
             Statement_block();
         }
         // epsilon
+        errorHandler.stopNonT();
     }
 
-    private static void Expression_list() throws IOException {
-        // FIRST(Expression) = { IDENTIFIER, NUMBER, NOT, LPAREN, MINUS, PLUS }
-        if (currentToken.getTokenCode() == TokenCode.IDENTIFIER
-                || currentToken.getTokenCode() == TokenCode.NUMBER
-                || currentToken.getTokenCode() == TokenCode.NOT
-                || currentToken.getTokenCode() == TokenCode.LPAREN
-                || (currentToken.getTokenCode() == TokenCode.ADDOP
-                    && (currentToken.getOpType() == OpType.MINUS
-                        || currentToken.getOpType() == OpType.PLUS))) {
+    private static void Expression_list() {
+        errorHandler.startNonT(NonT.EXPRESSION_LIST);
+        if (lookaheadIsFirstOfExpression()) {
             Expression();
             More_expressions();
         }
         // epsilon
+        errorHandler.stopNonT();
     }
 
-    private static void More_expressions() throws IOException {
-        if (currentToken.getTokenCode() == TokenCode.COMMA) {
-            Match(TokenCode.COMMA);
+    private static void More_expressions() {
+        errorHandler.startNonT(NonT.MORE_EXPRESSIONS);
+        if (lookaheadIs(TokenCode.COMMA) && !errorHandler.inRecovery()) {
+            match(TokenCode.COMMA);
             Expression();
             More_expressions();
         }
         // epsilon
+        errorHandler.stopNonT();
     }
 
-    private static void Expression() throws IOException {
+    private static void Expression() {
+        errorHandler.startNonT(NonT.EXPRESSION);
         Simple_expression();
         Expression_prime();
+        errorHandler.stopNonT();
     }
 
-    private static void Expression_prime() throws IOException {
-        if (currentToken.getTokenCode() == TokenCode.RELOP) {
-            Match(TokenCode.RELOP);
+    private static void Expression_prime() {
+        errorHandler.startNonT(NonT.EXPRESSION2);
+        if (lookaheadIs(TokenCode.RELOP)) {
+            match(TokenCode.RELOP);
             Simple_expression();
         }
         // epsilon
+        errorHandler.stopNonT();
     }
 
-    private static void Simple_expression() throws IOException {
-        // FIRST(TERM) = { IDENTIFIER, NUMBER, NOT, LPAREN }
-        if (currentToken.getTokenCode() == TokenCode.IDENTIFIER
-                || currentToken.getTokenCode() == TokenCode.NUMBER
-                || currentToken.getTokenCode() == TokenCode.NOT
-                || currentToken.getTokenCode() == TokenCode.LPAREN) {
-            Term();
-            Simple_expression_prime();
-        }
-        // FIRST(Sign()) = { MINUS, PLUS }
-        else if (currentToken.getTokenCode() == TokenCode.ADDOP
-                && (currentToken.getOpType() == OpType.MINUS
-                || currentToken.getOpType() == OpType.PLUS)) {
+    private static void Simple_expression() {
+        errorHandler.startNonT(NonT.SIMPLE_EXPRESSION);
+        if (lookaheadIn(NonT.firstOf(NonT.SIGN)))
             Sign();
-            Term();
-            Simple_expression_prime();
-        }
-        else {
-            PrintError(null, "invalidExpression", null);
-            Sync("simple_expression");
-        }
+        Term();
+        Simple_expression_prime();
+        errorHandler.stopNonT();
     }
 
-    private static void Simple_expression_prime() throws IOException {
-        if (currentToken.getTokenCode() == TokenCode.ADDOP) {
-            Match(TokenCode.ADDOP);
+    private static void Simple_expression_prime() {
+        errorHandler.startNonT(NonT.SIMPLE_EXPRESSION2);
+        if (lookaheadIs(TokenCode.ADDOP)) {
+            match(TokenCode.ADDOP);
             Term();
-            Simple_expression_prime();
         }
         // epsilon
+        errorHandler.stopNonT();
     }
 
-    private static void Term() throws IOException {
+    private static void Term() {
+        errorHandler.startNonT(NonT.TERM);
         Factor();
         Term_prime();
+        errorHandler.stopNonT();
     }
 
-    private static void Term_prime() throws IOException {
-        if (currentToken.getTokenCode() == TokenCode.MULOP) {
-            Match(TokenCode.MULOP);
+    private static void Term_prime() {
+        errorHandler.startNonT(NonT.TERM2);
+        if (lookaheadIs(TokenCode.MULOP)) {
+            match(TokenCode.MULOP);
             Factor();
-            Term_prime();
         }
         // epsilon
+        errorHandler.stopNonT();
     }
 
-    private static void Factor() throws IOException {
-        if (currentToken.getTokenCode() == TokenCode.IDENTIFIER) {
-            Match(TokenCode.IDENTIFIER);
+    private static void Factor() {
+        errorHandler.startNonT(NonT.FACTOR);
+        if (lookaheadIs(TokenCode.IDENTIFIER))
             Factor_prime();
-        }
-        else if (currentToken.getTokenCode() == TokenCode.NUMBER) {
-            Match(TokenCode.NUMBER);
-        }
-        else if (currentToken.getTokenCode() == TokenCode.LPAREN) {
-            Match(TokenCode.LPAREN);
+        else if (lookaheadIs(TokenCode.NUMBER))
+            match(TokenCode.NUMBER);
+        else if (lookaheadIs(TokenCode.LPAREN)) {
+            match(TokenCode.LPAREN);
             Expression();
-            if(!Match(TokenCode.RPAREN)){
-                Sync("factor");
-            }
+            match(TokenCode.RPAREN);
         }
-        else if (currentToken.getTokenCode() == TokenCode.NOT) {
-            Match(TokenCode.NOT);
+        else if (lookaheadIs(TokenCode.NOT)) {
+            match(TokenCode.NOT);
             Factor();
         }
-        else {
-            // This will never happen because simple_expression handles it
+        else { // TODO: Add error context, i.e. factor
+            noMatch();
         }
+        errorHandler.stopNonT();
     }
 
-    private static void Factor_prime() throws IOException {
-        if (currentToken.getTokenCode() == TokenCode.LPAREN) {
-            Match(TokenCode.LPAREN);
+    private static void Factor_prime() {
+        errorHandler.startNonT(NonT.FACTOR2);
+        match(TokenCode.IDENTIFIER);
+        Factor_prime_prime();
+        errorHandler.stopNonT();
+    }
+
+    private static void Factor_prime_prime() {
+        errorHandler.startNonT(NonT.FACTOR3);
+        if (lookaheadIs(TokenCode.LPAREN)) {
+            match(TokenCode.LPAREN);
             Expression_list();
-            if(!Match(TokenCode.RPAREN)){
-                Sync("factor'");
-            }
+            match(TokenCode.RPAREN);
         }
-        else {
-            Variable_loc_prime();
-        }
-    }
-
-    private static void Variable_loc() throws IOException {
-        Match(TokenCode.IDENTIFIER);
-        Variable_loc_prime();
-    }
-
-    private static void Variable_loc_prime() throws IOException {
-        if (currentToken.getTokenCode() == TokenCode.LBRACKET) {
-            Match(TokenCode.LBRACKET);
+        else if (lookaheadIs(TokenCode.LBRACKET)) {
+            match(TokenCode.LBRACKET);
             Expression();
-            if(!Match(TokenCode.RBRACKET)){
-                Sync("variable_loc'");
-            }
+            match(TokenCode.RBRACKET);
+        }
+        errorHandler.stopNonT();
+    }
+
+    private static void Variable_loc() {
+        errorHandler.startNonT(NonT.VARIABLE_LOC);
+        match(TokenCode.IDENTIFIER);
+        Variable_loc_prime();
+        errorHandler.stopNonT();
+    }
+
+    private static void Variable_loc_prime() {
+        errorHandler.startNonT(NonT.VARIABLE_LOC2);
+        if (lookaheadIs(TokenCode.LBRACKET)) {
+            match(TokenCode.LBRACKET);
+            Expression();
+            match(TokenCode.RBRACKET);
         }
         // epsilon
+        errorHandler.stopNonT();
     }
 
-    private static void Sign() throws IOException {
-        if (currentToken.getTokenCode() == TokenCode.ADDOP) {
-            if (currentToken.getOpType() == OpType.PLUS || currentToken.getOpType() == OpType.MINUS) {
-                Match(TokenCode.ADDOP);
+    private static void Sign() {
+        errorHandler.startNonT(NonT.SIGN);
+        if (lookaheadIsFirstOfSign()) {
+            match(TokenCode.ADDOP);
+        }
+        else { // TODO: Add error context, i.e. sign
+            noMatch();
+        }
+        errorHandler.stopNonT();
+    }
+
+    /***********************************
+     * Start of helper functions
+     ***********************************/
+
+    // Reads the next token.
+    // If the compiler is in error recovery we do not actually read a new token, we just pretend we do.
+    // We will get match failures which the ErrorHandler will supress. When we leave the procedure with
+    // the offending non-terminal, the ErrorHandler will go out of recovery mode and start reading tokens again.
+    private static void readNextToken() {
+        try {
+            // If the Error handler is in recovery mode, we don't read new tokens!
+            // We simply use current tokens until the Error handler exits the recovery mode
+            if (!errorHandler.inRecovery()) {
+                prevToken = currentToken;
+                currentToken = lexer.yylex();
+                trace("++ Next token read: " + currentToken.getTokenCode());
+                if (TRACE)
+                    if (prevToken != null && prevToken.getLineNumber() != currentToken.getLineNumber())
+                        System.out.println("Line " + currentToken.getLineNumber());
             }
-            else {
-                // This never happens
-            }
+            else
+                trace("++ Next token skipped because of recovery: Still: " + currentToken.getTokenCode());
+            // System.out.println(m_current.getTokenCode() + String.valueOf(m_current.getLineNum()) + ", col: " + String.valueOf(m_current.getColumnNum()));
+        }
+        catch(IOException e) {
+            System.out.println("IOException reading next token");
+            System.exit(1);
+        }
+    }
+
+    // Returns the next token of the input, without actually reading it
+    private static Token lookahead() {
+        return currentToken;
+    }
+
+    // Returns true if the lookahead token has the given tokencode
+    private static boolean lookaheadIs(TokenCode tokenCode) {
+        return currentToken.getTokenCode() == tokenCode;
+    }
+
+    // Returns true if the lookahed token is included in the given array of token codes
+    private static boolean lookaheadIn(TokenCode[] tokenCodes) {
+        for(int n=0;n<tokenCodes.length;n++)
+            if (tokenCodes[n] == currentToken.getTokenCode())
+                return true;
+        return false;
+    }
+
+    // Returns true if the lookahed token is in the FIRST of EXPRESSION.
+    // Need to specially check if the token is ADDOP to make sure the token is +/-
+    // (by checking the OpType of the token)
+    private static boolean lookaheadIsFirstOfExpression() {
+        if (!lookaheadIn(NonT.firstOf(NonT.EXPRESSION)))
+            return false;
+        if (lookaheadIs(TokenCode.ADDOP) && lookahead().getOpType() != OpType.PLUS && lookahead().getOpType() != OpType.MINUS)
+            return false;
+        else
+            return true;
+    }
+
+
+    // Return true if the lookahed is the first of sign (actually if the lexeme for the token was '+' or '-')
+    private static boolean lookaheadIsFirstOfSign() {
+        return (lookaheadIs(TokenCode.ADDOP) && (lookahead().getOpType() == OpType.PLUS || lookahead().getOpType() == OpType.MINUS));
+    }
+
+    // Match the the token and read next token if match is successful.
+    // If the match is unsuccessfull we let the ErrorHandler report the error and supply us with the next token to use.
+    // This next token will then not be used until we leave the parsing method where the mismatch occured.
+    // If the ErrorHandler is in the recovery state, it will suppress the error (not report it).
+    private static void match(TokenCode tokenCode) {
+        if (currentToken.getTokenCode() != tokenCode)
+        {
+            Token[] tokens = errorHandler.tokenMismatch(tokenCode, currentToken, prevToken);
+            currentToken = tokens[0];
+            prevToken = tokens[1];
+            trace("	failed match for " + tokenCode + ". current: " + currentToken.getTokenCode() + ", prev: " + currentToken.getTokenCode());
         }
         else {
-            // This never happens
+            trace("	Matched " + tokenCode);
+            readNextToken();
         }
     }
 
-    // Matches current token to the provided TokenCode, returns true if it matches
-    // false if it does not.
-    // Handles special cases of ERR_LONG_ID and, ERR_ILL_CHAR and unexpected eof.
-    private static boolean Match(TokenCode tc) throws IOException {
-        if (currentToken.getTokenCode() != tc) {
-
-            // If the unmatched tokencode is ERR_LONG_ID then we handle it here so
-            // we don't get another error expecting a token
-            if (currentToken.getTokenCode() == TokenCode.ERR_LONG_ID) {
-                PrintError(null, "longID", null);
-                return false;
-            }
-
-            else if (currentToken.getTokenCode() == TokenCode.EOF && eofReached == false) {
-                PrintError(null, "unexpectedEOF", null);
-                eofReached = true;
-                return false;
-            }
-            PrintError(tc, "expected", ConvertTokenCodeToString(tc));
-            return false;
-        }
-        prevToken = currentToken;
-        currentToken = lexer.yylex();
-        if (currentToken.getTokenCode() == TokenCode.ERR_ILL_CHAR) {
-            PrintError(null, "illegalChar", null);
-            return false;
-        }
-        return true;
+    // Called when none the next token is none of the possible tokens for some given part of the non-terminal.
+    // Behaviour is the same as match except that we have no specific token to match against.
+    private static void noMatch() {
+        Token[] tokens = errorHandler.noMatch(currentToken, prevToken);
+        currentToken = tokens[0];
+        prevToken = tokens[1];
     }
 
-    // Prints the error message to stdout
-    private static void PrintError(TokenCode expectedToken, String errorType, String expected) {
 
-        // We only want to print unexpected eof once.
-        if (currentToken.getTokenCode() == TokenCode.EOF && eofReached == true) {
-            return;
-        }
-        errorCounter++;
-
-        String errorMessage = "";
-        int lineNr = currentToken.getLineNumber();
-        int columnNr = currentToken.getColumn();
-
-
-        if (errorType.equals("expected")) {
-
-            // If the expected token is semicolon we want the error message carat
-            // to point behind the last token
-            if (expectedToken == TokenCode.SEMICOLON) {
-                lineNr = prevToken.getLineNumber();
-                columnNr = prevToken.getColumn() + prevToken.getTokenText().length();
-            }
-            errorMessage = "Expected " + expected;
-        }
-        else if (errorType.equals("invalidStatement")) {
-            errorMessage = "Invalid statement";
-        }
-        else if (errorType.equals("invalidExpression")) {
-            errorMessage = "Invalid expression";
-        }
-        else if (errorType.equals("illegalChar")) {
-            errorMessage = "Illegal character";
-        }
-        else if (errorType.equals("longID")) {
-            errorMessage = "Identifier too long";
-        }
-        else if (errorType.equals("endofclass")) {
-            errorMessage = "End of class";
-        }
-        else if (errorType.equals("unexpectedEOF")) {
-
-            // If the error message is unexpected eof we want to point behind the
-            // last token to prevent out of bounds exception on the array of code lines
-            lineNr = prevToken.getLineNumber();
-            columnNr = prevToken.getColumn() + prevToken.getTokenText().length();
-            errorMessage = "Unexpected end of file";
-        }
-        String errorLine = (lineNr + 1) + " : ";
-
-        System.out.println(errorLine + codeLines[lineNr]);
-
-        // So pretty
-        for (int i = 0; i < errorLine.length() + columnNr; i++) {
-            System.out.print(" ");
-        }
-        System.out.println("^ " + errorMessage);
-    }
-
-    // Pops tokens of the lexer stack until it finds either EOF or a token in the
-    // sync set for the given non-terminal
-    private static void Sync(String nonTerminal) throws IOException {
-        while (currentToken.getTokenCode() != TokenCode.EOF) {
-            if (syncSets.get(nonTerminal).contains(currentToken.getTokenCode())) {
-                return;
-            }
-            currentToken = lexer.yylex();
+    private static void trace(String msg) {
+        if (TRACE) {
+            System.out.println(msg);
         }
     }
 
-    // Splits the input file into an array of strings delimited by newlines.
-    // Used for displaying where an error occurred
-    private static String[] MakeCodeLines(String filePath){
-
-        String line;
-
-        Scanner code = null;
-        try {
-            code = new Scanner(new File(filePath)).useDelimiter("\n");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            System.exit(-1);
-        }
-
-        List<String> codeLinesTemp = new ArrayList<String>();
-
-        while (code.hasNext()) {
-            line = code.next();
-            codeLinesTemp.add(line);
-        }
-        code.close();
-
-        return codeLinesTemp.toArray(new String[codeLinesTemp.size()]);
-    }
-
-    // Takes an TokenCode and returns a corresponding string for error messages
-    private static String ConvertTokenCodeToString(TokenCode tc) {
-        if (tc == TokenCode.SEMICOLON) {
-            return "';'";
-        }
-        else if (tc == TokenCode.IDENTIFIER) {
-            return "an identifier";
-        }
-        else if (tc == TokenCode.NUMBER) {
-            return "a number";
-        }
-        else if (tc == TokenCode.ASSIGNOP) {
-            return "'='";
-        }
-        else if (tc == TokenCode.CLASS) {
-            return "'class'";
-        }
-        else if (tc == TokenCode.STATIC) {
-            return "'static'";
-        }
-        else if (tc == TokenCode.VOID) {
-            return "'void'";
-        }
-        else if (tc == TokenCode.LBRACE) {
-            return "'{'";
-        }
-        else if (tc == TokenCode.RBRACE) {
-            return "'}'";
-        }
-        else if (tc == TokenCode.LBRACKET) {
-            return "'['";
-        }
-        else if (tc == TokenCode.RBRACKET) {
-            return "']'";
-        }
-        else if (tc == TokenCode.LPAREN) {
-            return "'('";
-        }
-        else if (tc == TokenCode.RPAREN) {
-            return "')'";
-        }
-        else if (tc == TokenCode.INT || tc == TokenCode.REAL) {
-            return "a type";
-        }
-        else if (tc == TokenCode.EOF) {
-            return "end of file";
-        }
-        return "";
-    }
 }
