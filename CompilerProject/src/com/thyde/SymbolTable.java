@@ -5,16 +5,21 @@ import java.util.LinkedHashMap;
 import java.util.Set;
 
 public class SymbolTable {
-    private static LinkedHashMap<String, SymbolTableEntry> table = new LinkedHashMap<String, SymbolTableEntry>();
+    private static LinkedHashMap<String, SymbolTableEntry> table;
 
-    public static SymbolTableEntry AddEntry(String lexeme)
+    public SymbolTable() {
+        table = new LinkedHashMap<String, SymbolTableEntry>();
+        AddEntry("0");
+        AddEntry("1");
+    }
+    public SymbolTableEntry AddEntry(String lexeme)
     {
         SymbolTableEntry entry = new SymbolTableEntry(lexeme);
         table.put(lexeme, entry);
         return entry;
     }
 
-    public static SymbolTableEntry GetEntry(String lexeme)
+    public SymbolTableEntry GetEntry(String lexeme)
     {
         return table.get(lexeme);
     }

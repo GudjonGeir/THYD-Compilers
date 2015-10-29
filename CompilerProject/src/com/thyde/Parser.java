@@ -1,11 +1,8 @@
 package com.thyde;
 
-import javax.swing.plaf.nimbus.State;
-import java.io.FileNotFoundException;
-import java.util.*;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.LinkedList;
 
 public class Parser {
     private static Lexer lexer;
@@ -13,6 +10,10 @@ public class Parser {
     private static Token prevToken;
     private static ErrorHandler errorHandler;
     protected static final boolean TRACE = false;
+
+    private static CodeGenerator codeGenerator;
+    private static int tempNameCounter;
+    private static int lableCounter;
 
 
 
@@ -26,11 +27,16 @@ public class Parser {
         errorHandler = new ErrorHandler(lexer, filePath);
         currentToken = lexer.yylex();
 
+        codeGenerator = new CodeGenerator();
+        tempNameCounter = 1;
+        lableCounter = 1;
+
+
         Program();
         match(TokenCode.EOF);
 
         if (errorHandler.m_errorCount == 0) {
-            System.out.println("No errors");
+            codeGenerator.PrintCode();
         }
         else {
             System.out.println("Number of errors: " + errorHandler.m_errorCount);
@@ -95,7 +101,9 @@ public class Parser {
 
     private static void Variable() {
         errorHandler.startNonT(NonT.VARIABLE);
+        String identifier = getCurrentLexeme();
         match(TokenCode.IDENTIFIER);
+        codeGenerator.generateVariable(identifier);
         if (lookaheadIs(TokenCode.LBRACKET)) {
             match(TokenCode.LBRACKET);
             match(TokenCode.NUMBER);
@@ -127,9 +135,14 @@ public class Parser {
         errorHandler.startNonT(NonT.METHOD_DECLARATION);
         match(TokenCode.STATIC);
         Method_return_type();
+        String methodIdentifier = getCurrentLexeme();
         match(TokenCode.IDENTIFIER);
         match(TokenCode.LPAREN);
-        Parameters();
+
+        LinkedList<String> paramList = Parameters();
+
+        codeGenerator.generateMethod(methodIdentifier, paramList);
+
         match(TokenCode.RPAREN);
         match(TokenCode.LBRACE);
         Variable_declarations();
@@ -149,34 +162,48 @@ public class Parser {
         errorHandler.stopNonT();
     }
 
-    private static void  Parameters() {
+    private static LinkedList<String>  Parameters() {
         errorHandler.startNonT(NonT.PARAMETERS);
         // FIRST(Parameter_list()) = {INT, REAL}
         if (lookaheadIn(NonT.firstOf(NonT.PARAMETER_LIST))) {
-            Parameter_list();
+            LinkedList<String> paramList = Parameter_list();
+            errorHandler.stopNonT();
+            return paramList;
         }
         // epsilon
         errorHandler.stopNonT();
+        return new LinkedList<String>();
     }
 
-    private static void Parameter_list() {
+    private static LinkedList<String> Parameter_list() {
         errorHandler.startNonT(NonT.PARAMETER_LIST);
         Type();
+        String identifier = getCurrentLexeme();
         match(TokenCode.IDENTIFIER);
-        Parameter_list_prime();
+
+        LinkedList<String> paramList = Parameter_list_prime();
+        paramList.addFirst(identifier);
         errorHandler.stopNonT();
+        return paramList;
     }
 
-    private static void Parameter_list_prime() {
+    private static LinkedList<String> Parameter_list_prime() {
         errorHandler.startNonT(NonT.PARAMETER_LIST2);
         if (lookaheadIs(TokenCode.COMMA) && !errorHandler.inRecovery()) {
             match(TokenCode.COMMA);
             Type();
+            String identifier = getCurrentLexeme();
             match(TokenCode.IDENTIFIER);
-            Parameter_list_prime();
+
+            LinkedList<String> paramList  = Parameter_list_prime();
+            paramList.addFirst(identifier);
+
+            errorHandler.stopNonT();
+            return paramList;
         }
         // epsilon
         errorHandler.stopNonT();
+        return new LinkedList<String>();
     }
 
     private static void Statement_list() {
@@ -255,13 +282,14 @@ public class Parser {
 
     private static void Statement_prime() {
         errorHandler.startNonT(NonT.STATEMENT2);
+        String identifier = getCurrentLexeme();
         match(TokenCode.IDENTIFIER);
-        Statement_prime_prime();
+        Statement_prime_prime(identifier);
         match(TokenCode.SEMICOLON);
         errorHandler.stopNonT();
     }
 
-    private static void Statement_prime_prime() {
+    private static void Statement_prime_prime(String identifier) {
         errorHandler.startNonT(NonT.STATEMENT3);
         if (lookaheadIs(TokenCode.LPAREN)) {
             match(TokenCode.LPAREN);
@@ -273,7 +301,9 @@ public class Parser {
         }
         else if (lookaheadIs(TokenCode.ASSIGNOP)) {
             match(TokenCode.ASSIGNOP);
-            Expression();
+            SymbolTableEntry exprEntry = Expression();
+            SymbolTableEntry idEntry = codeGenerator.TableLookup(identifier);
+            codeGenerator.generateStatement(TacCode.ASSIGN, exprEntry, null, idEntry);
         }
         else if (lookaheadIs(TokenCode.LBRACKET)) {
             match(TokenCode.LBRACKET);
@@ -336,11 +366,12 @@ public class Parser {
         errorHandler.stopNonT();
     }
 
-    private static void Expression() {
+    private static SymbolTableEntry Expression() {
         errorHandler.startNonT(NonT.EXPRESSION);
-        Simple_expression();
+        SymbolTableEntry simpleExprEntry = Simple_expression();
         Expression_prime();
         errorHandler.stopNonT();
+        return simpleExprEntry;
     }
 
     private static void Expression_prime() {
@@ -353,13 +384,14 @@ public class Parser {
         errorHandler.stopNonT();
     }
 
-    private static void Simple_expression() {
+    private static SymbolTableEntry Simple_expression() {
         errorHandler.startNonT(NonT.SIMPLE_EXPRESSION);
         if (lookaheadIn(NonT.firstOf(NonT.SIGN)))
             Sign();
-        Term();
+        SymbolTableEntry termEntry = Term();
         Simple_expression_prime();
         errorHandler.stopNonT();
+        return termEntry;
     }
 
     private static void Simple_expression_prime() {
@@ -372,11 +404,12 @@ public class Parser {
         errorHandler.stopNonT();
     }
 
-    private static void Term() {
+    private static SymbolTableEntry Term() {
         errorHandler.startNonT(NonT.TERM);
-        Factor();
+        SymbolTableEntry entry = Factor();
         Term_prime();
         errorHandler.stopNonT();
+        return entry;
     }
 
     private static void Term_prime() {
@@ -389,10 +422,13 @@ public class Parser {
         errorHandler.stopNonT();
     }
 
-    private static void Factor() {
+    private static SymbolTableEntry Factor() {
         errorHandler.startNonT(NonT.FACTOR);
-        if (lookaheadIs(TokenCode.IDENTIFIER))
-            Factor_prime();
+        if (lookaheadIs(TokenCode.IDENTIFIER)) {
+            SymbolTableEntry entry = Factor_prime();
+            errorHandler.stopNonT();
+            return entry;
+        }
         else if (lookaheadIs(TokenCode.NUMBER))
             match(TokenCode.NUMBER);
         else if (lookaheadIs(TokenCode.LPAREN)) {
@@ -408,13 +444,19 @@ public class Parser {
             noMatch();
         }
         errorHandler.stopNonT();
+        return null;
     }
 
-    private static void Factor_prime() {
+    private static SymbolTableEntry Factor_prime() {
         errorHandler.startNonT(NonT.FACTOR2);
+        String identifier = getCurrentLexeme();
         match(TokenCode.IDENTIFIER);
+        SymbolTableEntry entry = codeGenerator.TableLookup(identifier);
+
+        // TODO: handle function calls
         Factor_prime_prime();
         errorHandler.stopNonT();
+        return entry;
     }
 
     private static void Factor_prime_prime() {
@@ -462,7 +504,7 @@ public class Parser {
     }
 
     /***********************************
-     * Start of helper functions
+     * Start of parser helper functions
      ***********************************/
 
     // Reads the next token.
@@ -560,4 +602,27 @@ public class Parser {
         }
     }
 
+    /************************************
+     * Start of code generation functions
+     ************************************/
+
+    private static String getCurrentLexeme() {
+        return currentToken.getTokenLexeme();
+    }
+
+    private static SymbolTableEntry newTemp() {
+        String name = "t" + tempNameCounter;
+        SymbolTableEntry entry = codeGenerator.globalTable.AddEntry(name);
+        // CodeGenerator.generate(TacCode.VAR, null, null, entry);
+        tempNameCounter++;
+        return entry;
+    }
+
+    private static SymbolTableEntry newLabel() {
+        String label = "lab" + lableCounter;
+        SymbolTableEntry entry = codeGenerator.globalTable.AddEntry(label);
+        // CodeGenerator.generate(TacCode.LABEL, null, null, entry);
+        lableCounter++;
+        return entry;
+    }
 }

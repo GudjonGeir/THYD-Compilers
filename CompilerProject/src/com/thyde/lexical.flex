@@ -150,15 +150,12 @@ semicolon = ";"
 {id} { if(yytext().length() > 32) {
         return new Token(TokenCode.ERR_LONG_ID, DataType.NONE, OpType.NONE, null, yyline + 1, yycolumn, yytext());
        }
-       SymbolTableEntry stEntry = SymbolTable.AddEntry(yytext());
-       return new Token(TokenCode.IDENTIFIER, DataType.ID, OpType.NONE, stEntry, yyline + 1, yycolumn, yytext());
+       return new Token(TokenCode.IDENTIFIER, DataType.ID, OpType.NONE, null, yyline + 1, yycolumn, yytext());
      }
 
-{intNum} { SymbolTableEntry stEntry = SymbolTable.AddEntry(yytext());
-           return new Token(TokenCode.NUMBER, DataType.INT, OpType.NONE, stEntry, yyline + 1, yycolumn, yytext()); }
+{intNum} { return new Token(TokenCode.NUMBER, DataType.INT, OpType.NONE, null, yyline + 1, yycolumn, yytext()); }
 
-{realNum} { SymbolTableEntry stEntry = SymbolTable.AddEntry(yytext());
-            return new Token(TokenCode.NUMBER, DataType.REAL, OpType.NONE, stEntry, yyline + 1, yycolumn, yytext()); }
+{realNum} { return new Token(TokenCode.NUMBER, DataType.REAL, OpType.NONE, null, yyline + 1, yycolumn, yytext()); }
 
 {incdecop} { return new Token(TokenCode.INCDECOP, DataType.OP, GetOpType(yytext()), null, yyline + 1, yycolumn, yytext() );}
 
