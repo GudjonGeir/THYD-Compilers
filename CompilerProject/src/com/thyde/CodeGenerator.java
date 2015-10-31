@@ -75,7 +75,7 @@ public class CodeGenerator {
     }
 
 
-    public SymbolTableEntry CreateNumEntry(String lexeme) {
+    public SymbolTableEntry CreateTableEntry(String lexeme) {
         if (currentLocalTable != null) {
             return currentLocalTable.AddEntry(lexeme);
         }

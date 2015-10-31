@@ -229,10 +229,20 @@ public class Parser {
             trace("if");
             match(TokenCode.IF);
             match(TokenCode.LPAREN);
-            Expression();
+            SymbolTableEntry lab1 = NewLabel();
+            SymbolTableEntry lab2 = NewLabel();
+            // 1 label Expression = true;
+            // 1 label Expression = false; lab2
+            // 1 label til að hoppa út úr ifinu og elsinu lab1
+            SymbolTableEntry tempVar = Expression();
+            SymbolTableEntry zero = codeGenerator.TableLookup("0");
+            codeGenerator.generateStatement(TacCode.EQ, tempVar, zero, lab2);
             match(TokenCode.RPAREN);
             Statement_block();
+            codeGenerator.generateStatement(TacCode.GOTO, null, null, lab1);
+            codeGenerator.generateStatement(TacCode.LABEL, null, null, lab2);
             Optional_else();
+            codeGenerator.generateStatement(TacCode.LABEL, null, null, lab1);
         }
         else if (lookaheadIs(TokenCode.FOR)) {
             trace("for");
@@ -369,19 +379,39 @@ public class Parser {
     private static SymbolTableEntry Expression() {
         errorHandler.startNonT(NonT.EXPRESSION);
         SymbolTableEntry simpleExprEntry = Simple_expression();
-        Expression_prime();
+        SymbolTableEntry exprPrimeEntry = Expression_prime(simpleExprEntry);
         errorHandler.stopNonT();
-        return simpleExprEntry;
+        if (exprPrimeEntry == null) {
+            return simpleExprEntry;
+        }
+        return exprPrimeEntry;
     }
 
-    private static void Expression_prime() {
+    private static SymbolTableEntry Expression_prime(SymbolTableEntry parentEntry) {
         errorHandler.startNonT(NonT.EXPRESSION2);
+        SymbolTableEntry entry = null;
         if (lookaheadIs(TokenCode.RELOP)) {
+            TacCode op = TacCode.OpTypeToTacCode(currentToken.getOpType());
             match(TokenCode.RELOP);
-            Simple_expression();
+            SymbolTableEntry simpleExprEntry = Simple_expression();
+
+            SymbolTableEntry label1 = NewLabel();
+            SymbolTableEntry label2 = NewLabel();
+            SymbolTableEntry zero = codeGenerator.TableLookup("0");
+            SymbolTableEntry one = codeGenerator.TableLookup("1");
+            SymbolTableEntry tempVar = NewTemp();
+
+            codeGenerator.generateStatement(op, parentEntry, simpleExprEntry, label1);
+            codeGenerator.generateStatement(TacCode.ASSIGN, zero, null, tempVar);
+            codeGenerator.generateStatement(TacCode.GOTO, null, null, label2);
+            codeGenerator.generateStatement(TacCode.LABEL, null, null, label1);
+            codeGenerator.generateStatement(TacCode.ASSIGN, one, null, tempVar);
+            codeGenerator.generateStatement(TacCode.LABEL, null, null, label2);
+            entry = tempVar;
         }
         // epsilon
         errorHandler.stopNonT();
+        return entry;
     }
 
     private static SymbolTableEntry Simple_expression() {
@@ -455,7 +485,7 @@ public class Parser {
         else if (lookaheadIs(TokenCode.NUMBER)) {
             String num = getCurrentLexeme();
             match(TokenCode.NUMBER);
-            entry = codeGenerator.CreateNumEntry(num);
+            entry = codeGenerator.CreateTableEntry(num);
         }
         else if (lookaheadIs(TokenCode.LPAREN)) {
             match(TokenCode.LPAREN);
@@ -648,8 +678,7 @@ public class Parser {
 
     private static SymbolTableEntry NewLabel() {
         String label = "lab" + lableCounter;
-        SymbolTableEntry entry = codeGenerator.globalTable.AddEntry(label);
-        // CodeGenerator.generate(TacCode.LABEL, null, null, entry);
+        SymbolTableEntry entry = codeGenerator.CreateTableEntry(label);
         lableCounter++;
         return entry;
     }
