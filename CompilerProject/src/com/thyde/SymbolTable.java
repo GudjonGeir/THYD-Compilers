@@ -5,7 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Set;
 
 public class SymbolTable {
-    private static LinkedHashMap<String, SymbolTableEntry> table;
+    private LinkedHashMap<String, SymbolTableEntry> table;
 
     public SymbolTable() {
         table = new LinkedHashMap<String, SymbolTableEntry>();
@@ -24,7 +24,7 @@ public class SymbolTable {
         return table.get(lexeme);
     }
 
-    public static Iterator<SymbolTableEntry> GetTable() {
+    public Iterator<SymbolTableEntry> GetTable() {
         Set entrySet = table.entrySet();
 
         Iterator it = entrySet.iterator();

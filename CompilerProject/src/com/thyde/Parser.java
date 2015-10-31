@@ -386,22 +386,46 @@ public class Parser {
 
     private static SymbolTableEntry Simple_expression() {
         errorHandler.startNonT(NonT.SIMPLE_EXPRESSION);
-        if (lookaheadIn(NonT.firstOf(NonT.SIGN)))
-            Sign();
+        OpType uminus = null;
+        if (lookaheadIn(NonT.firstOf(NonT.SIGN))) {
+            uminus = Sign();
+        }
         SymbolTableEntry termEntry = Term();
-        Simple_expression_prime();
+
+        if (uminus == OpType.MINUS) {
+            SymbolTableEntry tempEntry = NewTemp();
+            codeGenerator.generateStatement(TacCode.UMINUS, termEntry, null, tempEntry);
+            termEntry = tempEntry;
+        }
+
+        SymbolTableEntry simpleExprPrimeEntry = Simple_expression_prime(termEntry);
         errorHandler.stopNonT();
-        return termEntry;
+        // Simple_expression_prime can result in epsilon.
+        if(simpleExprPrimeEntry == null) {
+            return termEntry;
+        }
+        return simpleExprPrimeEntry;
     }
 
-    private static void Simple_expression_prime() {
+    // Receives a STE from parent in case an ADDOP is present, then it creates a temp var and
+    // generates tac code for the expression and returns the entry for the temp var.
+    // If addop is not present it returns a null entry (epsilon)
+    private static SymbolTableEntry Simple_expression_prime(SymbolTableEntry parentEntry) {
         errorHandler.startNonT(NonT.SIMPLE_EXPRESSION2);
+        SymbolTableEntry entry = null;
         if (lookaheadIs(TokenCode.ADDOP)) {
+            OpType op = currentToken.getOpType();
             match(TokenCode.ADDOP);
-            Term();
+
+            SymbolTableEntry termEntry = Term();
+            SymbolTableEntry tempEntry = NewTemp();
+            TacCode opType = TacCode.OpTypeToTacCode(op);
+            codeGenerator.GenerateExpression(opType, parentEntry, termEntry, tempEntry);
+            entry = tempEntry;
         }
         // epsilon
         errorHandler.stopNonT();
+        return entry;
     }
 
     private static SymbolTableEntry Term() {
@@ -424,27 +448,29 @@ public class Parser {
 
     private static SymbolTableEntry Factor() {
         errorHandler.startNonT(NonT.FACTOR);
+        SymbolTableEntry entry = null;
         if (lookaheadIs(TokenCode.IDENTIFIER)) {
-            SymbolTableEntry entry = Factor_prime();
-            errorHandler.stopNonT();
-            return entry;
+            entry = Factor_prime();
         }
-        else if (lookaheadIs(TokenCode.NUMBER))
+        else if (lookaheadIs(TokenCode.NUMBER)) {
+            String num = getCurrentLexeme();
             match(TokenCode.NUMBER);
+            entry = codeGenerator.CreateNumEntry(num);
+        }
         else if (lookaheadIs(TokenCode.LPAREN)) {
             match(TokenCode.LPAREN);
-            Expression();
+            entry = Expression();
             match(TokenCode.RPAREN);
         }
         else if (lookaheadIs(TokenCode.NOT)) {
             match(TokenCode.NOT);
-            Factor();
+            entry = Factor();
         }
         else { // TODO: Add error context, i.e. factor
             noMatch();
         }
         errorHandler.stopNonT();
-        return null;
+        return entry;
     }
 
     private static SymbolTableEntry Factor_prime() {
@@ -492,15 +518,18 @@ public class Parser {
         errorHandler.stopNonT();
     }
 
-    private static void Sign() {
+    private static OpType Sign() {
         errorHandler.startNonT(NonT.SIGN);
+        OpType opType = null;
         if (lookaheadIsFirstOfSign()) {
+            opType = currentToken.getOpType();
             match(TokenCode.ADDOP);
         }
         else { // TODO: Add error context, i.e. sign
             noMatch();
         }
         errorHandler.stopNonT();
+        return opType;
     }
 
     /***********************************
@@ -610,15 +639,14 @@ public class Parser {
         return currentToken.getTokenLexeme();
     }
 
-    private static SymbolTableEntry newTemp() {
+    private static SymbolTableEntry NewTemp() {
         String name = "t" + tempNameCounter;
-        SymbolTableEntry entry = codeGenerator.globalTable.AddEntry(name);
-        // CodeGenerator.generate(TacCode.VAR, null, null, entry);
+        SymbolTableEntry entry = codeGenerator.generateVariable(name);
         tempNameCounter++;
         return entry;
     }
 
-    private static SymbolTableEntry newLabel() {
+    private static SymbolTableEntry NewLabel() {
         String label = "lab" + lableCounter;
         SymbolTableEntry entry = codeGenerator.globalTable.AddEntry(label);
         // CodeGenerator.generate(TacCode.LABEL, null, null, entry);

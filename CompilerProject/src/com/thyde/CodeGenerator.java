@@ -15,15 +15,23 @@ public class CodeGenerator {
     public CodeGenerator() {
         program = new QuadrupleList();
         globalTable = new SymbolTable();
+        currentLocalTable = null;
 
         methodsStarted = false;
 
     }
 
-    public void generateVariable(String identifier) {
-        SymbolTableEntry entry = globalTable.AddEntry(identifier);
+    public SymbolTableEntry generateVariable(String identifier) {
+        SymbolTableEntry entry = null;
+        if (methodsStarted) {
+            entry = currentLocalTable.AddEntry(identifier);
+        }
+        else {
+            entry = globalTable.AddEntry(identifier);
+        }
         Quadruple q = new Quadruple(TacCode.VAR, null, null, entry);
         program.AddQuadruple(q);
+        return entry;
     }
 
     public void generateMethod(String identifier, LinkedList<String> paramList) {
@@ -61,6 +69,19 @@ public class CodeGenerator {
         program.AddQuadruple(q);
     }
 
+    public void GenerateExpression(TacCode tc, SymbolTableEntry p1, SymbolTableEntry p2, SymbolTableEntry res) {
+        Quadruple q = new Quadruple(tc, p1, p2, res);
+        program.AddQuadruple(q);
+    }
+
+
+    public SymbolTableEntry CreateNumEntry(String lexeme) {
+        if (currentLocalTable != null) {
+            return currentLocalTable.AddEntry(lexeme);
+        }
+        return globalTable.AddEntry(lexeme);
+    }
+
     public SymbolTableEntry TableLookup(String lexeme) {
         SymbolTableEntry entry = currentLocalTable.GetEntry(lexeme);
         if (entry == null) {
@@ -79,5 +100,29 @@ public class CodeGenerator {
             String result = q.GetResult() != null ? q.GetResult().lexeme : "";
             System.out.println("TacCode: " + tc + ", param1: " + param1 + ", param2: " + param2 + ", result: " + result);
         }
+    }
+
+    public void PrintTables() {
+        System.out.println("========Global table========");
+        Iterator it = globalTable.GetTable();
+        int index = 0;
+        while (it.hasNext()) {
+            Map.Entry<String, SymbolTableEntry> me = (Map.Entry)it.next();
+            SymbolTableEntry entry = me.getValue();
+            System.out.println(entry.lexeme);
+            index++;
+        }
+        System.out.println("===========================");
+
+        System.out.println("========Local table========");
+        it = currentLocalTable.GetTable();
+        index = 0;
+        while (it.hasNext()) {
+            Map.Entry<String, SymbolTableEntry> me = (Map.Entry)it.next();
+            SymbolTableEntry entry = me.getValue();
+            System.out.println(entry.lexeme);
+            index++;
+        }
+        System.out.println("===========================");
     }
 }

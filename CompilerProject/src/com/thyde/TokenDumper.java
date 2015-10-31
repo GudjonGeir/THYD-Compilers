@@ -25,14 +25,14 @@ public class TokenDumper {
         System.out.println();
         System.out.println();
 
-        Iterator it = SymbolTable.GetTable();
-        int index = 0;
-        while (it.hasNext()) {
-            Map.Entry<String, SymbolTableEntry> me = (Map.Entry)it.next();
-            SymbolTableEntry entry = me.getValue();
-            System.out.println(index + " " + entry.lexeme);
-            index++;
-        }
+//        Iterator it = SymbolTable.GetTable();
+//        int index = 0;
+//        while (it.hasNext()) {
+//            Map.Entry<String, SymbolTableEntry> me = (Map.Entry)it.next();
+//            SymbolTableEntry entry = me.getValue();
+//            System.out.println(index + " " + entry.lexeme);
+//            index++;
+//        }
     }
 
 }

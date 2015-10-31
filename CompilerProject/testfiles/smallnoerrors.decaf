@@ -1,0 +1,13 @@
+/* A program without parsing errors */
+class Program {
+  int x;
+  real y;
+
+
+  static void main() {
+    x = -1 + 2;
+    y = x;
+    x = x - 1;
+
+  }
+}
