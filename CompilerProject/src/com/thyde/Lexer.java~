@@ -734,13 +734,11 @@ class Lexer {
             { if(yytext().length() > 32) {
         return new Token(TokenCode.ERR_LONG_ID, DataType.NONE, OpType.NONE, null, yyline + 1, yycolumn, yytext());
        }
-       SymbolTableEntry stEntry = SymbolTable.AddEntry(yytext());
-       return new Token(TokenCode.IDENTIFIER, DataType.ID, OpType.NONE, stEntry, yyline + 1, yycolumn, yytext());
+       return new Token(TokenCode.IDENTIFIER, DataType.ID, OpType.NONE, null, yyline + 1, yycolumn, yytext());
             }
           case 34: break;
           case 5: 
-            { SymbolTableEntry stEntry = SymbolTable.AddEntry(yytext());
-           return new Token(TokenCode.NUMBER, DataType.INT, OpType.NONE, stEntry, yyline + 1, yycolumn, yytext());
+            { return new Token(TokenCode.NUMBER, DataType.INT, OpType.NONE, null, yyline + 1, yycolumn, yytext());
             }
           case 35: break;
           case 6: 
@@ -800,8 +798,7 @@ class Lexer {
             }
           case 49: break;
           case 20: 
-            { SymbolTableEntry stEntry = SymbolTable.AddEntry(yytext());
-            return new Token(TokenCode.NUMBER, DataType.REAL, OpType.NONE, stEntry, yyline + 1, yycolumn, yytext());
+            { return new Token(TokenCode.NUMBER, DataType.REAL, OpType.NONE, null, yyline + 1, yycolumn, yytext());
             }
           case 50: break;
           case 21: 

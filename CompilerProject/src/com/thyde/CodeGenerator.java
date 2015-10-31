@@ -15,6 +15,8 @@ public class CodeGenerator {
     public CodeGenerator() {
         program = new QuadrupleList();
         globalTable = new SymbolTable();
+        globalTable.AddEntry("writeln");
+        globalTable.AddEntry("write");
         currentLocalTable = null;
 
         methodsStarted = false;
@@ -62,6 +64,17 @@ public class CodeGenerator {
             Quadruple paramQ = new Quadruple(TacCode.FPARAM, null, null, paramEntry);
             program.AddQuadruple(paramQ);
         }
+    }
+
+    public void generateMethodCall(SymbolTableEntry identifier, LinkedList<SymbolTableEntry> paramList) {
+        // Iterate over the parameters and add quadruples for them
+        ListIterator<SymbolTableEntry> listIterator = paramList.listIterator();
+        while (listIterator.hasNext()) {
+            Quadruple paramQ = new Quadruple(TacCode.APARAM, null, null, listIterator.next());
+            program.AddQuadruple(paramQ);
+        }
+        Quadruple callQ = new Quadruple(TacCode.CALL, null, null, identifier);
+        program.AddQuadruple(callQ);
     }
 
     public void generateStatement(TacCode tacCode, SymbolTableEntry p1, SymbolTableEntry p2, SymbolTableEntry res) {

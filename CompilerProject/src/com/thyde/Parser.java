@@ -231,9 +231,7 @@ public class Parser {
             match(TokenCode.LPAREN);
             SymbolTableEntry lab1 = NewLabel();
             SymbolTableEntry lab2 = NewLabel();
-            // 1 label Expression = true;
-            // 1 label Expression = false; lab2
-            // 1 label til að hoppa út úr ifinu og elsinu lab1
+
             SymbolTableEntry tempVar = Expression();
             SymbolTableEntry zero = codeGenerator.TableLookup("0");
             codeGenerator.generateStatement(TacCode.EQ, tempVar, zero, lab2);
@@ -248,16 +246,40 @@ public class Parser {
             trace("for");
             match(TokenCode.FOR);
             match(TokenCode.LPAREN);
-            Variable_loc();
+
+            SymbolTableEntry varloc1Entry = Variable_loc();
             match(TokenCode.ASSIGNOP);
-            Expression();
+            SymbolTableEntry expr1Entry = Expression();
             match(TokenCode.SEMICOLON);
-            Expression();
+            codeGenerator.generateStatement(TacCode.ASSIGN, expr1Entry, null, varloc1Entry);
+
+            SymbolTableEntry lab1 = NewLabel(); // Start of loop
+            SymbolTableEntry lab2 = NewLabel(); // End of loop
+            codeGenerator.generateStatement(TacCode.LABEL, null, null, lab1);
+
+            SymbolTableEntry expr2Entry = Expression();
+
+            SymbolTableEntry zero = codeGenerator.TableLookup("0");
+            SymbolTableEntry one = codeGenerator.TableLookup("1");
+            codeGenerator.generateStatement(TacCode.EQ, expr2Entry, zero, lab2);
+
+            SymbolTableEntry lab5 = NewLabel(); // iteration action
+
+
             match(TokenCode.SEMICOLON);
-            Variable_loc();
+            SymbolTableEntry varloc2Entry = Variable_loc();
+            OpType incdecop = currentToken.getOpType();
+            TacCode incdecTac = incdecop == OpType.INC ? TacCode.ADD : TacCode.SUB;
             match(TokenCode.INCDECOP);
             match(TokenCode.RPAREN);
+
+
             Statement_block();
+
+            codeGenerator.generateStatement(TacCode.LABEL, null, null, lab5);
+            codeGenerator.generateStatement(incdecTac, varloc2Entry, one, varloc2Entry);
+            codeGenerator.generateStatement(TacCode.GOTO, null, null, lab1);
+            codeGenerator.generateStatement(TacCode.LABEL, null, null, lab2);
         }
         else if (lookaheadIs(TokenCode.RETURN)) {
             trace("return");
@@ -303,11 +325,25 @@ public class Parser {
         errorHandler.startNonT(NonT.STATEMENT3);
         if (lookaheadIs(TokenCode.LPAREN)) {
             match(TokenCode.LPAREN);
-            Expression_list();
+            SymbolTableEntry idEntry = codeGenerator.TableLookup(identifier);
+            LinkedList exprList = Expression_list();
+            codeGenerator.generateMethodCall(idEntry, exprList);
             match(TokenCode.RPAREN);
         }
         else if (lookaheadIs(TokenCode.INCDECOP)) {
+            OpType op = currentToken.getOpType();
             match(TokenCode.INCDECOP);
+            SymbolTableEntry entry = codeGenerator.TableLookup(identifier);
+            SymbolTableEntry one =  codeGenerator.TableLookup("1");
+            TacCode tc = null;
+            if(op == OpType.INC) {
+                tc = TacCode.ADD;
+            }
+            else {
+                tc = TacCode.SUB;
+            }
+
+            codeGenerator.generateStatement(tc, entry, one, entry);
         }
         else if (lookaheadIs(TokenCode.ASSIGNOP)) {
             match(TokenCode.ASSIGNOP);
@@ -355,25 +391,31 @@ public class Parser {
         errorHandler.stopNonT();
     }
 
-    private static void Expression_list() {
+    private static LinkedList<SymbolTableEntry> Expression_list() {
         errorHandler.startNonT(NonT.EXPRESSION_LIST);
+        LinkedList<SymbolTableEntry> exprList = new LinkedList<SymbolTableEntry>();
         if (lookaheadIsFirstOfExpression()) {
-            Expression();
-            More_expressions();
+            SymbolTableEntry exprEntry = Expression();
+            exprList = More_expressions();
+            exprList.addFirst(exprEntry);
         }
         // epsilon
         errorHandler.stopNonT();
+        return exprList;
     }
 
-    private static void More_expressions() {
+    private static LinkedList<SymbolTableEntry> More_expressions() {
         errorHandler.startNonT(NonT.MORE_EXPRESSIONS);
+        LinkedList<SymbolTableEntry> exprList = new LinkedList<SymbolTableEntry>();
         if (lookaheadIs(TokenCode.COMMA) && !errorHandler.inRecovery()) {
             match(TokenCode.COMMA);
-            Expression();
-            More_expressions();
+            SymbolTableEntry exprEntry = Expression();
+            exprList = More_expressions();
+            exprList.addFirst(exprEntry);
         }
         // epsilon
         errorHandler.stopNonT();
+        return exprList;
     }
 
     private static SymbolTableEntry Expression() {
@@ -460,20 +502,33 @@ public class Parser {
 
     private static SymbolTableEntry Term() {
         errorHandler.startNonT(NonT.TERM);
-        SymbolTableEntry entry = Factor();
-        Term_prime();
+        SymbolTableEntry factorEntry = Factor();
+        SymbolTableEntry termPrimeEntry = Term_prime(factorEntry);
         errorHandler.stopNonT();
-        return entry;
+        if (termPrimeEntry == null) {
+            return factorEntry;
+        }
+        return termPrimeEntry;
     }
 
-    private static void Term_prime() {
+    // Receives a STE from parent in case an MULOP is present, then it creates a temp var and
+    // generates tac code for the term and returns the entry for the temp var.
+    // If MULOP is not present it returns a null entry (epsilon)
+    private static SymbolTableEntry Term_prime(SymbolTableEntry parentEntry) {
         errorHandler.startNonT(NonT.TERM2);
+        SymbolTableEntry entry = null;
         if (lookaheadIs(TokenCode.MULOP)) {
+            OpType op = currentToken.getOpType();
             match(TokenCode.MULOP);
-            Factor();
+            SymbolTableEntry factorEntry = Factor();
+            SymbolTableEntry tempEntry = NewTemp();
+            TacCode opType = TacCode.OpTypeToTacCode(op);
+            codeGenerator.GenerateExpression(opType, parentEntry, factorEntry, tempEntry);
+            entry = tempEntry;
         }
         // epsilon
         errorHandler.stopNonT();
+        return entry;
     }
 
     private static SymbolTableEntry Factor() {
@@ -509,17 +564,17 @@ public class Parser {
         match(TokenCode.IDENTIFIER);
         SymbolTableEntry entry = codeGenerator.TableLookup(identifier);
 
-        // TODO: handle function calls
-        Factor_prime_prime();
+        Factor_prime_prime(entry);
         errorHandler.stopNonT();
         return entry;
     }
 
-    private static void Factor_prime_prime() {
+    private static void Factor_prime_prime(SymbolTableEntry parentEntry) {
         errorHandler.startNonT(NonT.FACTOR3);
         if (lookaheadIs(TokenCode.LPAREN)) {
             match(TokenCode.LPAREN);
-            Expression_list();
+            LinkedList exprList = Expression_list();
+            codeGenerator.generateMethodCall(parentEntry, exprList);
             match(TokenCode.RPAREN);
         }
         else if (lookaheadIs(TokenCode.LBRACKET)) {
@@ -530,11 +585,14 @@ public class Parser {
         errorHandler.stopNonT();
     }
 
-    private static void Variable_loc() {
+    private static SymbolTableEntry Variable_loc() {
         errorHandler.startNonT(NonT.VARIABLE_LOC);
+        String identifier = getCurrentLexeme();
         match(TokenCode.IDENTIFIER);
+        SymbolTableEntry idEntry = codeGenerator.TableLookup(identifier);
         Variable_loc_prime();
         errorHandler.stopNonT();
+        return idEntry;
     }
 
     private static void Variable_loc_prime() {

@@ -47,7 +47,7 @@ package com.thyde;
             } else if (lexeme.equals("||")) {
                 ot = OpType.OR;
 
-            } else if (lexeme.equals("∗")) {
+            } else if (lexeme.equals("*")) {
                 ot = OpType.MULT;
 
             } else if (lexeme.equals("/")) {
