@@ -10,9 +10,6 @@ class Program {
     if (i > 0) {
       i = (1 - j*3);
     }
-    else {
-      i++;
-    }
   	writeln(i);
   }
 }

@@ -148,6 +148,7 @@ public class Parser {
         Variable_declarations();
         Statement_list();
         match(TokenCode.RBRACE);
+        codeGenerator.generateStatement(TacCode.RETURN, null, null, null);
         errorHandler.stopNonT();
     }
 
@@ -237,10 +238,10 @@ public class Parser {
             codeGenerator.generateStatement(TacCode.EQ, tempVar, zero, lab2);
             match(TokenCode.RPAREN);
             Statement_block();
-            codeGenerator.generateStatement(TacCode.GOTO, null, null, lab1);
-            codeGenerator.generateStatement(TacCode.LABEL, null, null, lab2);
-            Optional_else();
-            codeGenerator.generateStatement(TacCode.LABEL, null, null, lab1);
+//            codeGenerator.generateStatement(TacCode.GOTO, null, null, lab1);
+//            codeGenerator.generateStatement(TacCode.LABEL, null, null, lab2);
+            Optional_else(lab1, lab2);
+//            codeGenerator.generateStatement(TacCode.LABEL, null, null, lab1);
         }
         else if (lookaheadIs(TokenCode.FOR)) {
             trace("for");
@@ -255,6 +256,7 @@ public class Parser {
 
             SymbolTableEntry lab1 = NewLabel(); // Start of loop
             SymbolTableEntry lab2 = NewLabel(); // End of loop
+            codeGenerator.SetCurrentEndOfLoop(lab2);
             codeGenerator.generateStatement(TacCode.LABEL, null, null, lab1);
 
             SymbolTableEntry expr2Entry = Expression();
@@ -264,6 +266,7 @@ public class Parser {
             codeGenerator.generateStatement(TacCode.EQ, expr2Entry, zero, lab2);
 
             SymbolTableEntry lab5 = NewLabel(); // iteration action
+            codeGenerator.SetCurrentStartOfLoop(lab5);
 
 
             match(TokenCode.SEMICOLON);
@@ -285,17 +288,20 @@ public class Parser {
             trace("return");
             match(TokenCode.RETURN);
             Optional_expression();
+//            codeGenerator.generateStatement(TacCode.RETURN, null, null, null);
             match(TokenCode.SEMICOLON);
         }
         else if (lookaheadIs(TokenCode.BREAK)) {
             trace("break");
             match(TokenCode.BREAK);
             match(TokenCode.SEMICOLON);
+            codeGenerator.generateStatement(TacCode.GOTO, null, null, codeGenerator.GetCurrentEndOfLoop());
         }
         else if (lookaheadIs(TokenCode.CONTINUE)) {
             trace("continue");
             match(TokenCode.CONTINUE);
             match(TokenCode.SEMICOLON);
+            codeGenerator.generateStatement(TacCode.GOTO, null, null, codeGenerator.GetCurrentStartOfLoop());
         }
         else if (lookaheadIs(TokenCode.RBRACE)) {
             trace("block");
@@ -367,7 +373,10 @@ public class Parser {
         errorHandler.startNonT(NonT.OPTIONAL_EXPRESSION);
         // FIRST(Expression) = { IDENTIFIER, NUMBER, NOT, LPAREN, MINUS, PLUS }
         if (lookaheadIsFirstOfExpression()) {
-            Expression();
+            SymbolTableEntry exprEntry = Expression();
+            if (exprEntry != null) {
+                codeGenerator.generateStatement(TacCode.ASSIGN, exprEntry, null, codeGenerator.GetCurrentMethod());
+            }
         }
         // epsilon
         errorHandler.stopNonT();
@@ -381,11 +390,18 @@ public class Parser {
         errorHandler.stopNonT();
     }
 
-    private static void Optional_else() {
+    private static void Optional_else(SymbolTableEntry endOfIf, SymbolTableEntry endOfElse) {
         errorHandler.startNonT(NonT.OPTIONAL_ELSE);
         if (lookaheadIs(TokenCode.ELSE)) {
             match(TokenCode.ELSE);
+            codeGenerator.generateStatement(TacCode.GOTO, null, null, endOfIf);
+            codeGenerator.generateStatement(TacCode.LABEL, null, null, endOfElse);
             Statement_block();
+            codeGenerator.generateStatement(TacCode.LABEL, null, null, endOfIf);
+        }
+        else {
+            // Prevent double labels
+            codeGenerator.generateStatement(TacCode.LABEL, null, null, endOfElse);
         }
         // epsilon
         errorHandler.stopNonT();
@@ -493,7 +509,13 @@ public class Parser {
             SymbolTableEntry tempEntry = NewTemp();
             TacCode opType = TacCode.OpTypeToTacCode(op);
             codeGenerator.GenerateExpression(opType, parentEntry, termEntry, tempEntry);
-            entry = tempEntry;
+            SymbolTableEntry sExprPrimeEntry = Simple_expression_prime(tempEntry);
+            if (sExprPrimeEntry != null) {
+                entry = sExprPrimeEntry;
+            }
+            else {
+                entry = tempEntry;
+            }
         }
         // epsilon
         errorHandler.stopNonT();
@@ -524,7 +546,13 @@ public class Parser {
             SymbolTableEntry tempEntry = NewTemp();
             TacCode opType = TacCode.OpTypeToTacCode(op);
             codeGenerator.GenerateExpression(opType, parentEntry, factorEntry, tempEntry);
-            entry = tempEntry;
+            SymbolTableEntry termPrimeEntry = Term_prime(tempEntry);
+            if (termPrimeEntry != null) {
+                entry = termPrimeEntry;
+            }
+            else{
+                entry = tempEntry;
+            }
         }
         // epsilon
         errorHandler.stopNonT();
@@ -726,18 +754,30 @@ public class Parser {
     private static String getCurrentLexeme() {
         return currentToken.getTokenLexeme();
     }
-
     private static SymbolTableEntry NewTemp() {
-        String name = "t" + tempNameCounter;
-        SymbolTableEntry entry = codeGenerator.generateVariable(name);
-        tempNameCounter++;
-        return entry;
+        while(true) {
+            String name = "t" + tempNameCounter;
+            SymbolTableEntry lookup = codeGenerator.TableLookup(name);
+            if (lookup != null) {
+                continue;
+            }
+            SymbolTableEntry entry = codeGenerator.generateVariable(name);
+            tempNameCounter++;
+            return entry;
+        }
     }
 
     private static SymbolTableEntry NewLabel() {
-        String label = "lab" + lableCounter;
-        SymbolTableEntry entry = codeGenerator.CreateTableEntry(label);
-        lableCounter++;
-        return entry;
+        while (true) {
+            String label = "lab" + lableCounter;
+            SymbolTableEntry lookup = codeGenerator.TableLookup(label);
+            if (lookup != null) {
+                continue;
+            }
+            SymbolTableEntry entry = codeGenerator.CreateTableEntry(label);
+            lableCounter++;
+            return entry;
+        }
+
     }
 }

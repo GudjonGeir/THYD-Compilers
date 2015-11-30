@@ -12,6 +12,15 @@ public class CodeGenerator {
     private int gotoMainIndex;
     private boolean methodsStarted;
 
+    // Used in case of continue or break
+    private SymbolTableEntry currentStartOfLoop;
+    private SymbolTableEntry currentEndOfLoop;
+
+    // Used in optional return value
+    private SymbolTableEntry currentMethod;
+
+    private boolean mainFound;
+
     public CodeGenerator() {
         program = new QuadrupleList();
         globalTable = new SymbolTable();
@@ -21,14 +30,19 @@ public class CodeGenerator {
 
         methodsStarted = false;
 
+        currentStartOfLoop = null;
+        currentEndOfLoop = null;
+
+        currentMethod = null;
+
+        mainFound = false;
     }
 
     public SymbolTableEntry generateVariable(String identifier) {
         SymbolTableEntry entry = null;
         if (methodsStarted) {
             entry = currentLocalTable.AddEntry(identifier);
-        }
-        else {
+        } else {
             entry = globalTable.AddEntry(identifier);
         }
         Quadruple q = new Quadruple(TacCode.VAR, null, null, entry);
@@ -47,6 +61,7 @@ public class CodeGenerator {
         currentLocalTable = new SymbolTable();
 
         SymbolTableEntry methodEntry = globalTable.AddEntry(identifier);
+        currentMethod = methodEntry;
         Quadruple methodQ = new Quadruple(TacCode.LABEL, null, null, methodEntry);
         program.AddQuadruple(methodQ);
 
@@ -55,6 +70,7 @@ public class CodeGenerator {
         if (identifier.equals("main")) {
             Quadruple gotoQ = new Quadruple(TacCode.GOTO, null, null, methodEntry);
             program.AddQuadrupleAt(gotoQ, gotoMainIndex);
+            mainFound = true;
         }
 
         // Iterate over the parameters and add quadruples for them
@@ -73,7 +89,7 @@ public class CodeGenerator {
             Quadruple paramQ = new Quadruple(TacCode.APARAM, null, null, listIterator.next());
             program.AddQuadruple(paramQ);
         }
-        Quadruple callQ = new Quadruple(TacCode.CALL, null, null, identifier);
+        Quadruple callQ = new Quadruple(TacCode.CALL, identifier, null, null);
         program.AddQuadruple(callQ);
     }
 
@@ -103,15 +119,74 @@ public class CodeGenerator {
         return entry;
     }
 
+    public SymbolTableEntry GetCurrentStartOfLoop() {
+        return currentStartOfLoop;
+    }
+
+    public void SetCurrentStartOfLoop(SymbolTableEntry label) {
+        currentStartOfLoop = label;
+    }
+
+    public SymbolTableEntry GetCurrentEndOfLoop() {
+        return currentEndOfLoop;
+    }
+
+    public void SetCurrentEndOfLoop(SymbolTableEntry label) {
+        currentEndOfLoop = label;
+    }
+
+    public SymbolTableEntry GetCurrentMethod() {
+        return currentMethod;
+    }
+
     public void PrintCode() {
+        if (!mainFound) {
+            System.out.println("Error: Main method not found");
+            return;
+        }
         ListIterator<Quadruple> iterator = program.GetIterator();
+        int labelBuffer = 3;
+        int tacCodeBuffer = 4;
+        int param1Buffer = 8;
+        int param2Buffer = 13;
+        int resBuffer = 11;
         while (iterator.hasNext()) {
             Quadruple q = iterator.next();
             TacCode tc = q.GetTacCode();
             String param1 = q.GetParam1() != null ? q.GetParam1().lexeme : "";
             String param2 = q.GetParam2() != null ? q.GetParam2().lexeme : "";
             String result = q.GetResult() != null ? q.GetResult().lexeme : "";
-            System.out.println("TacCode: " + tc + ", param1: " + param1 + ", param2: " + param2 + ", result: " + result);
+            if (tc == TacCode.LABEL) {
+                PrintSpaces(labelBuffer + program.resMaxLength - result.length());
+                System.out.print(result + ":");
+                q = iterator.next();
+                tc = q.GetTacCode();
+                param1 = q.GetParam1() != null ? q.GetParam1().lexeme : "";
+                param2 = q.GetParam2() != null ? q.GetParam2().lexeme : "";
+                result = q.GetResult() != null ? q.GetResult().lexeme : "";
+
+            }
+            else {
+                PrintSpaces(labelBuffer + program.resMaxLength + 1);
+            }
+            PrintSpaces(tacCodeBuffer + program.tacCodeMaxLength - tc.toString().length());
+            System.out.print(tc.toString());
+
+            PrintSpaces(param1Buffer + program.param1MaxLength - param1.length());
+            System.out.print(param1);
+
+            PrintSpaces(param2Buffer + program.param2MaxLength - param2.length());
+            System.out.print(param2);
+
+
+            PrintSpaces(resBuffer + program.resMaxLength - result.length());
+            System.out.println(result);
+        }
+    }
+
+    public void PrintSpaces(int length) {
+        for (int i = 0; i < length; i++) {
+            System.out.print(" ");
         }
     }
 

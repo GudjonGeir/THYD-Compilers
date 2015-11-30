@@ -1,0 +1,22 @@
+class Program {
+  int i;
+  int j;
+
+  static void main() {
+	  for(i=0;i<10;i++) {
+	  	if(i == 5)
+	  	{
+	  		j = 3;
+	  		break;
+	  	}
+	  	else {
+	  	   j = 5;
+	  	}
+      	j = 1;
+      	j = 2;
+    }
+  
+    writeln(i);
+    writeln(j);
+  }
+}

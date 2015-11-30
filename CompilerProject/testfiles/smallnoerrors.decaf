@@ -5,9 +5,7 @@ class Program {
 
 
   static void main() {
-    x = -1 + 2;
-    y = x;
-    x = x - 1;
+    x  = 1 + 2 * 3;
 
   }
 }
